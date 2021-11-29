@@ -1,6 +1,6 @@
 name: Compile
 
-on: push
+on: [push, pull_request]
 
 jobs:
   build:
@@ -24,4 +24,4 @@ jobs:
       - name: Build Triangoli
         run: |
           cd triangoli
-          v -gc boehm -prod -skip-unused -show-timings main.v
+          v -prod -skip-unused -show-timings main.v
