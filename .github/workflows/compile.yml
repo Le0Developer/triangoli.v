@@ -1,0 +1,32 @@
+name: Compile
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout V
+        uses: actions/checkout@v2
+        with:
+          repository: vlang/v
+      - name: Checkout Triangoli
+        uses: actions/checkout@v2
+        with:
+          path: triangoli
+      - name: Build V
+        run: |
+          make
+          sudo ./v symlink
+      - name: Build Triangoli
+        run: |
+          cd triangoli
+          make
+      - name: Compress .app for MacOS
+        run: tar -czvf triangoli/dist/Triangoli.app.tar.gz triangoli/dist/Triangoli.app
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            triangoli/dist/triangoli.exe

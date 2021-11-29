@@ -1,0 +1,28 @@
+name: Format
+
+on: [push, pull_request]
+
+jobs:
+  ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout V
+        uses: actions/checkout@v2
+        with:
+          repository: vlang/v
+      - name: Checkout AOC
+        uses: actions/checkout@v2
+        with:
+          path: aoc
+      - name: Build V
+        run: |
+          make
+          sudo ./v symlink
+      - name: Install Dependencies
+        run: |
+          v install pcre
+      - name: Test code
+        run: |
+          cd aoc
+          v test .
+          v fmt . -c
