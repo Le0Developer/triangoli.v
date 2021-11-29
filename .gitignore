@@ -1,0 +1,11 @@
+# Binaries for programs and plugins
+main
+*.exe
+*.exe~
+*.so
+*.dylib
+*.dll
+*.dSYM
+.DS_Store
+/dist/Triangoli.app/Contents/MacOS/triangoli
+/dist/triangoli.exe
