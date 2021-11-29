@@ -18,10 +18,8 @@ jobs:
         with:
           path: triangoli
       - name: Build V
-        run: |
-          make
-          sudo ./v symlink
+        run: make
       - name: Build Triangoli
         run: |
           cd triangoli
-          v -prod -skip-unused -show-timings main.v
+          ../v -prod -skip-unused -show-timings main.v
