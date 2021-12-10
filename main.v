@@ -322,62 +322,63 @@ fn draw_menu(mut app TriangoliApp) {
 }
 
 fn event_menu(mut ev gg.Event, mut app TriangoliApp) {
-	if ev.typ == .key_down {
-		modifier := $if macos { gg.Modifier.super } $else { gg.Modifier.ctrl }
-		if ev.key_code == .n && gg.Modifier(ev.modifiers) == modifier {
-			data := '{"cells":[]}'
-			app.current_map = GameMap{'Untitled', 'untitled.tmap', false, data}
+	match ev.typ {
+		.key_down {
+			modifier := $if macos { gg.Modifier.super } $else { gg.Modifier.ctrl }
+			if ev.key_code == .n && gg.Modifier(ev.modifiers) == modifier {
+				data := '{"cells":[]}'
+				app.current_map = GameMap{'Untitled', 'untitled.tmap', false, data}
+				app.map_data = load_map(app.current_map.map_data)
+				app.state = .ingame
+				app.log('creating new map')
+			}
+			if ev.key_code == .e && gg.Modifier(ev.modifiers) == modifier {
+				data := '{"cells":[]}'
+				app.current_map = GameMap{'Untitled', 'untitled.tmap', false, data}
+				app.map_data = load_map(app.current_map.map_data)
+				expand_map(mut app.map_data, 30, 10)
+				app.state = .editor
+				app.log('opening new map in editor')
+			}
+			if ev.key_code == .escape {
+				app.gg.quit()
+			}
+		}
+		.files_droped {
+			num_dropped := sapp.get_num_dropped_files()
+			if num_dropped < 1 {
+				return
+			}
+			filename := sapp.get_dropped_file_path(0)
+			data := os.read_file(filename) or {
+				app.log('failed to read file: $err')
+				return
+			}
+			app.current_map = GameMap{'Drag and Drop', filename, false, data}
 			app.map_data = load_map(app.current_map.map_data)
 			app.state = .ingame
-			app.log('creating new map')
+			app.log('opening map $filename')
 		}
-		if ev.key_code == .e && gg.Modifier(ev.modifiers) == modifier {
-			data := '{"cells":[]}'
-			app.current_map = GameMap{'Untitled', 'untitled.tmap', false, data}
-			app.map_data = load_map(app.current_map.map_data)
-			expand_map(mut app.map_data, 30, 10)
-			app.state = .editor
-			app.log('opening new map in editor')
+		.mouse_down {
+			if ev.mouse_button != .left {
+				return
+			}
+			font_size := 11
+			if app.gg.mouse_pos_y < 85 || app.gg.mouse_pos_y > 85 + font_size {
+				return
+			}
+			cmap_id := int(app.gg.mouse_pos_x - 5) / 100
+			if cmap_id >= compaign_maps.len {
+				return
+			}
+			cmap := compaign_maps[cmap_id]
+			app.current_map = cmap
+			app.map_data = load_map(cmap.map_data)
+			app.state = .ingame
+			app.log('loading campaign $cmap.name')
 		}
-		if ev.key_code == .escape {
-			app.gg.quit()
-		}
-		return
+		else {}
 	}
-	if ev.typ == .files_droped {
-		num_dropped := sapp.get_num_dropped_files()
-		if num_dropped < 1 {
-			return
-		}
-		filename := sapp.get_dropped_file_path(0)
-		data := os.read_file(filename) or {
-			app.log('failed to read file: $err')
-			return
-		}
-		app.current_map = GameMap{'Drag and Drop', filename, false, data}
-		app.map_data = load_map(app.current_map.map_data)
-		app.state = .ingame
-		app.log('opening map $filename')
-	}
-	if ev.typ != .mouse_down {
-		return
-	}
-	if ev.mouse_button != .left {
-		return
-	}
-	font_size := 11
-	if app.gg.mouse_pos_y < 85 || app.gg.mouse_pos_y > 85 + font_size {
-		return
-	}
-	cmap_id := int(app.gg.mouse_pos_x - 5) / 100
-	if cmap_id >= compaign_maps.len {
-		return
-	}
-	cmap := compaign_maps[cmap_id]
-	app.current_map = cmap
-	app.map_data = load_map(cmap.map_data)
-	app.state = .ingame
-	app.log('loading campaign $cmap.name')
 }
 
 fn draw_game(mut app TriangoliApp) {
@@ -409,73 +410,74 @@ fn draw_game(mut app TriangoliApp) {
 
 
 fn event_game(mut ev gg.Event, mut app TriangoliApp) {
-	if ev.typ == .key_down {
-		modifier := $if macos { gg.Modifier.super } $else { gg.Modifier.ctrl }
-		if ev.key_code == .r && gg.Modifier(ev.modifiers) == modifier {
-			app.map_data = load_map(app.current_map.map_data)
-		}
-		if ev.key_code == .e && gg.Modifier(ev.modifiers) == modifier
-			&& !app.current_map.is_campaign_map {
-			app.map_data = load_map(app.current_map.map_data)
-			expand_map(mut app.map_data, 30, 10)
-			app.state = .editor
-		}
-		if ev.key_code == .escape {
-			if app.cli_launch {
-				app.gg.quit()
-			} else {
-				app.state = .menu
+	match ev.typ {
+		.key_down {
+			modifier := $if macos { gg.Modifier.super } $else { gg.Modifier.ctrl }
+			if ev.key_code == .r && gg.Modifier(ev.modifiers) == modifier {
+				app.map_data = load_map(app.current_map.map_data)
+			}
+			if ev.key_code == .e && gg.Modifier(ev.modifiers) == modifier
+				&& !app.current_map.is_campaign_map {
+				app.map_data = load_map(app.current_map.map_data)
+				expand_map(mut app.map_data, 30, 10)
+				app.state = .editor
+			}
+			if ev.key_code == .escape {
+				if app.cli_launch {
+					app.gg.quit()
+				} else {
+					app.state = .menu
+				}
 			}
 		}
-		return
-	}
-	if ev.typ == .files_droped {
-		if app.current_map.is_campaign_map {
-			app.log('cannot load map while playing campaign')
-			return
+		.files_droped {
+			if app.current_map.is_campaign_map {
+				app.log('cannot load map while playing campaign')
+				return
+			}
+			if app.cli_launch {
+				app.log('cannot load map when starting by using the cli')
+				return
+			}
+			num_dropped := sapp.get_num_dropped_files()
+			if num_dropped < 1 {
+				return
+			}
+			filename := sapp.get_dropped_file_path(0)
+			data := os.read_file(filename) or {
+				app.log('failed to read file: $err')
+				return
+			}
+			app.current_map = GameMap{'Drag and Drop', filename, false, data}
+			app.map_data = load_map(app.current_map.map_data)
+			app.log('opening map $filename')
 		}
-		if app.cli_launch {
-			app.log('cannot load map when starting by using the cli')
-			return
-		}
-		num_dropped := sapp.get_num_dropped_files()
-		if num_dropped < 1 {
-			return
-		}
-		filename := sapp.get_dropped_file_path(0)
-		data := os.read_file(filename) or {
-			app.log('failed to read file: $err')
-			return
-		}
-		app.current_map = GameMap{'Drag and Drop', filename, false, data}
-		app.map_data = load_map(app.current_map.map_data)
-		app.log('opening map $filename')
-	}
-	if ev.typ != .mouse_down {
-		return
-	}
-	if ev.mouse_button != .left && ev.mouse_button != .right {
-		return
-	}
-	mark_as_mine := ev.mouse_button == .left
+		.mouse_down {
+			if ev.mouse_button != .left && ev.mouse_button != .right {
+				return
+			}
+			mark_as_mine := ev.mouse_button == .left
 
-	cell, cy, cx := pointing_at_cell(app) or {
-		return
-	}
+			cell, cy, cx := pointing_at_cell(app) or {
+				return
+			}
 
-	if cell.is_revealed || cell.typ == .empty {
-		return
-	}
-	if mark_as_mine == (cell.typ == .mine) {
-		app.map_data.cells[cy][cx].is_revealed = true
-		if cell.typ == .mine {
-			app.map_data.remaining_mines--
-		} else if cell.typ == .not_mine {
-			app.map_data.remaining_other--
+			if cell.is_revealed || cell.typ == .empty {
+				return
+			}
+			if mark_as_mine == (cell.typ == .mine) {
+				app.map_data.cells[cy][cx].is_revealed = true
+				if cell.typ == .mine {
+					app.map_data.remaining_mines--
+				} else if cell.typ == .not_mine {
+					app.map_data.remaining_other--
+				}
+			} else {
+				app.map_data.mistakes++
+				app.log('Mistake!')
+			}
 		}
-	} else {
-		app.map_data.mistakes++
-		app.log('Mistake!')
+		else {}
 	}
 }
 
@@ -496,104 +498,104 @@ fn draw_editor(mut app TriangoliApp) {
 }
 
 fn event_editor(mut ev gg.Event, mut app TriangoliApp) {
-	if app.current_map.is_campaign_map {
+	if app.current_map.is_campaign_map { // small safeguard that should never happen
 		return
 	}
-	if ev.typ == .key_down {
-		modifier := $if macos { gg.Modifier.super } $else { gg.Modifier.ctrl }
-		if ev.key_code == .s && gg.Modifier(ev.modifiers) == modifier {
-			data := export_map(app.map_data)
-			app.current_map.map_data = data
-			os.write_file(app.current_map.filename, data) or {
-				app.log('failed to save map: $err')
-				return
+	match ev.typ {
+		.key_down {
+			modifier := $if macos { gg.Modifier.super } $else { gg.Modifier.ctrl }
+			if ev.key_code == .s && gg.Modifier(ev.modifiers) == modifier {
+				data := export_map(app.map_data)
+				app.current_map.map_data = data
+				os.write_file(app.current_map.filename, data) or {
+					app.log('failed to save map: $err')
+					return
+				}
+				$if macos {
+					app.log('saved map into ${os.join_path(os.getwd(), app.current_map.filename)}')
+				} $else {
+					app.log('saved map into $app.current_map.filename')
+				}
 			}
-			$if macos {
-				app.log('saved map into ${os.join_path(os.getwd(), app.current_map.filename)}')
-			} $else {
-				app.log('saved map into $app.current_map.filename')
+			if ev.key_code == .p && gg.Modifier(ev.modifiers) == modifier {
+				data := export_map(app.map_data)
+				app.current_map.map_data = data
+				app.map_data = load_map(app.current_map.map_data)
+				app.state = .ingame
+				app.log('Switched to playing')
 			}
-		}
-		if ev.key_code == .p && gg.Modifier(ev.modifiers) == modifier {
-			data := export_map(app.map_data)
-			app.current_map.map_data = data
-			app.map_data = load_map(app.current_map.map_data)
-			app.state = .ingame
-			app.log('Switched to playing')
-		}
-		if ev.key_code == .escape {
-			if app.cli_launch {
-				app.gg.quit()
-			} else {
-				app.state = .menu
-			}
-		}
-		return
-	}
-	if ev.typ == .files_droped {
-		if app.cli_launch {
-			app.log('cannot load map when starting using the cli')
-			return
-		}
-		num_dropped := sapp.get_num_dropped_files()
-		if num_dropped < 1 {
-			return
-		}
-		filename := sapp.get_dropped_file_path(0)
-		data := os.read_file(filename) or {
-			app.log('failed to read file: $err')
-			return
-		}
-		app.current_map = GameMap{'Drag and Drop', filename, false, data}
-		app.map_data = load_map(app.current_map.map_data)
-		app.log('opening map $filename')
-	}
-	if ev.typ != .mouse_down && ev.typ != .mouse_scroll {
-		return
-	}
-	if ev.typ == .mouse_down && ev.mouse_button != .left && ev.mouse_button != .right
-		&& ev.mouse_button != .middle {
-		return
-	}
-	if ev.typ == .mouse_scroll && ev.scroll_y == 0 {
-		return
-	}
-
-	cell, cy, cx := pointing_at_cell(app) or {
-		return
-	}
-
-	if ev.typ == .mouse_down {
-		if ev.mouse_button == .middle {
-			if cell.typ != .empty {
-				app.map_data.cells[cy][cx].is_revealed = !cell.is_revealed
-			}
-		} else {
-			if (ev.mouse_button == .left && cell.typ == .mine)
-				|| (ev.mouse_button == .right && cell.typ == .not_mine) {
-				app.map_data.cells[cy][cx].typ = .empty
-				app.map_data.cells[cy][cx].is_revealed = false
-			} else {
-				app.map_data.cells[cy][cx].typ = if ev.mouse_button == .left {
-					CellType.mine
+			if ev.key_code == .escape {
+				if app.cli_launch {
+					app.gg.quit()
 				} else {
-					CellType.not_mine
+					app.state = .menu
 				}
 			}
 		}
-	} else {
-		if cell.typ == .not_mine {
-			mut count := cell.count
-			if ev.scroll_y > 0 {
-				count++
-			} else {
-				count--
+		.files_droped {
+			if app.cli_launch {
+				app.log('cannot load map when starting using the cli')
+				return
 			}
-			if count < 0 {
-				count = 0
+			num_dropped := sapp.get_num_dropped_files()
+			if num_dropped < 1 {
+				return
 			}
-			app.map_data.cells[cy][cx].count = count
+			filename := sapp.get_dropped_file_path(0)
+			data := os.read_file(filename) or {
+				app.log('failed to read file: $err')
+				return
+			}
+			app.current_map = GameMap{'Drag and Drop', filename, false, data}
+			app.map_data = load_map(app.current_map.map_data)
+			app.log('opening map $filename')
 		}
+		.mouse_down {
+			if ev.mouse_button != .left && ev.mouse_button != .right && ev.mouse_button != .middle {
+				return
+			}
+			cell, cy, cx := pointing_at_cell(app) or {
+				return
+			}
+			if ev.mouse_button == .middle {
+				if cell.typ != .empty {
+					app.map_data.cells[cy][cx].is_revealed = !cell.is_revealed
+				}
+			} else {
+				if (ev.mouse_button == .left && cell.typ == .mine)
+					|| (ev.mouse_button == .right && cell.typ == .not_mine) {
+					app.map_data.cells[cy][cx].typ = .empty
+					app.map_data.cells[cy][cx].is_revealed = false
+				} else {
+					app.map_data.cells[cy][cx].typ = if ev.mouse_button == .left {
+						CellType.mine
+					} else {
+						CellType.not_mine
+					}
+				}
+			}
+		}
+		.mouse_scroll {
+			if ev.scroll_y == 0 {
+				return
+			}
+			cell, cy, cx := pointing_at_cell(app) or {
+				return
+			}
+			if cell.typ == .not_mine {
+				mut count := cell.count
+				if ev.scroll_y > 0 {
+					count++
+				} else {
+					count--
+				}
+				if count < -1 {
+					count = -1
+				}
+				app.map_data.cells[cy][cx].count = count
+			}
+		}
+		else {}
 	}
 }
 
