@@ -7,5 +7,6 @@ main
 *.dll
 *.dSYM
 .DS_Store
+/dist/Triangoli.app.tar.gz
 /dist/Triangoli.app/Contents/MacOS/triangoli
 /dist/triangoli.exe
