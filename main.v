@@ -62,7 +62,7 @@ mut:
 struct TriangoliApp {
 mut:
 	gg        &gg.Context    = 0
-	gamestate TriangoliState = .menu
+	state TriangoliState = .menu
 
 	current_map GameMap
 	map_data    MapData
@@ -77,6 +77,7 @@ mut:
 fn (mut app TriangoliApp) log(text string) {
 	log := Log{text, time.now()}
 	app.logs << log
+	eprintln("[LOG] $text")
 }
 
 enum TriangoliState {
@@ -105,6 +106,18 @@ struct Log {
 }
 
 fn main() {
+	$if macos {
+		if os.getwd() == '/' {
+			// if you're running the file as .app, the cwd will be /
+			// so set it to something sensible, like the home directory or Documents
+			if os.exists(os.join_path(os.home_dir(), 'Documents')) {
+				os.chdir(os.join_path(os.home_dir(), 'Documents')) or {}
+			} else {
+				os.chdir(os.home_dir()) or {}
+			}
+		}
+	}
+
 	mut app := &TriangoliApp{}
 	app.gg = gg.new_context(
 		bg_color: c_background
@@ -136,7 +149,7 @@ fn main() {
 			exit(1)
 		}
 		if mapname != '' {
-			app.gamestate = .ingame
+			app.state = .ingame
 			data := os.read_file(mapname) or {
 				if !editor {
 					eprintln('failed to load map file: $err')
@@ -149,7 +162,7 @@ fn main() {
 			app.cli_launch = true
 		}
 		if editor {
-			app.gamestate = .editor
+			app.state = .editor
 			if mapname == '' {
 				app.current_map = GameMap{'Untitled', 'untitled.tmap', false, '{"cells": []}'}
 			}
@@ -175,7 +188,7 @@ fn frame(mut app TriangoliApp) {
 		part_rect: gg.Rect{0, 0, default_window_width, default_window_height},
 		color: background_color
 	)
-	match app.gamestate {
+	match app.state {
 		.menu { draw_menu(mut app) }
 		.ingame { draw_game(mut app) }
 		.editor { draw_editor(mut app) }
@@ -192,7 +205,7 @@ fn frame(mut app TriangoliApp) {
 }
 
 fn event(mut ev gg.Event, mut app TriangoliApp) {
-	match app.gamestate {
+	match app.state {
 		.menu { event_menu(mut ev, mut app) }
 		.ingame { event_game(mut ev, mut app) }
 		.editor { event_editor(mut ev, mut app) }
@@ -303,12 +316,6 @@ fn expand_map(mut md MapData, width int, height int) {
 fn draw_menu(mut app TriangoliApp) {
 	app.gg.draw_text_def(5, 5, 'menu')
 	app.gg.draw_text_def(5, 65, 'compaign:')
-	$if macos {
-		if os.getwd() == '/' {
-			// if the cwd is / it probably should be the home dir
-			os.chdir(os.home_dir()) or {}
-		}
-	}
 	for i, cmap in compaign_maps {
 		app.gg.draw_text(5 + 100 * i, 85, cmap.name, color: gx.dark_blue)
 	}
@@ -321,7 +328,7 @@ fn event_menu(mut ev gg.Event, mut app TriangoliApp) {
 			data := '{"cells":[]}'
 			app.current_map = GameMap{'Untitled', 'untitled.tmap', false, data}
 			app.map_data = load_map(app.current_map.map_data)
-			app.gamestate = .ingame
+			app.state = .ingame
 			app.log('creating new map')
 		}
 		if ev.key_code == .e && gg.Modifier(ev.modifiers) == modifier {
@@ -329,7 +336,7 @@ fn event_menu(mut ev gg.Event, mut app TriangoliApp) {
 			app.current_map = GameMap{'Untitled', 'untitled.tmap', false, data}
 			app.map_data = load_map(app.current_map.map_data)
 			expand_map(mut app.map_data, 30, 10)
-			app.gamestate = .editor
+			app.state = .editor
 			app.log('opening new map in editor')
 		}
 		if ev.key_code == .escape {
@@ -345,12 +352,11 @@ fn event_menu(mut ev gg.Event, mut app TriangoliApp) {
 		filename := sapp.get_dropped_file_path(0)
 		data := os.read_file(filename) or {
 			app.log('failed to read file: $err')
-			eprintln('unable to read file: $err')
 			return
 		}
 		app.current_map = GameMap{'Drag and Drop', filename, false, data}
 		app.map_data = load_map(app.current_map.map_data)
-		app.gamestate = .ingame
+		app.state = .ingame
 		app.log('opening map $filename')
 	}
 	if ev.typ != .mouse_down {
@@ -370,87 +376,18 @@ fn event_menu(mut ev gg.Event, mut app TriangoliApp) {
 	cmap := compaign_maps[cmap_id]
 	app.current_map = cmap
 	app.map_data = load_map(cmap.map_data)
-	app.gamestate = .ingame
+	app.state = .ingame
 	app.log('loading campaign $cmap.name')
 }
 
 fn draw_game(mut app TriangoliApp) {
-	offset_x := vertical_width / 2
-	offset_y := horizontal_width / 2
 	app.gg.draw_text_def(0, 0, 'Mistakes: $app.map_data.mistakes  Remaining: $app.map_data.remaining_mines')
 
 	// diff := time.now() - app.last_frame
 	// app.last_frame = time.now()
 	// app.gg.draw_text_def(0, 10, "${1 / (f64(diff.nanoseconds()) / time.second)} fps")
 
-	for i, row in app.map_data.cells {
-		for j, cell in row {
-			if cell.typ == .empty {
-				continue
-			}
-			if (i + j) % 2 == 0 {
-				mut x1 := j * horizontal_width - horizontal_width / 2
-				mut y1 := (i + 1) * vertical_width
-				mut x2 := (j + 1) * horizontal_width + horizontal_width / 2
-				mut y2 := (i + 1) * vertical_width
-				mut x3 := j * horizontal_width + horizontal_width / 2
-				mut y3 := i * vertical_width
-				if cell.group >= 0 {
-					color := app.map_data.groups[cell.group]
-					app.gg.draw_triangle(offset_x + x1, offset_y + y1, offset_x + x2,
-						offset_y + y2, offset_x + x3, offset_y + y3, color)
-					x1 += 2
-					y1 -= 1
-					x2 -= 2
-					y2 -= 1
-					y3 += 2
-				}
-				mut color := c_cell_unknown
-				if cell.is_revealed {
-					color = if cell.typ == .mine { c_cell_mine } else { c_cell_revealed }
-				}
-				app.gg.draw_triangle(offset_x + x1, offset_y + y1, offset_x + x2, offset_y + y2,
-					offset_x + x3, offset_y + y3, color)
-				if cell.is_revealed && cell.typ == .not_mine {
-					x := j * horizontal_width + horizontal_width / 2 - 4
-					y := i * vertical_width + vertical_width / 2
-					app.gg.draw_text(offset_x + x, offset_y + y, cell.count.str(),
-						color: gx.white
-					)
-				}
-			} else {
-				mut x1 := j * horizontal_width - horizontal_width / 2
-				mut y1 := i * vertical_width
-				mut x2 := (j + 1) * horizontal_width + horizontal_width / 2
-				mut y2 := i * vertical_width
-				mut x3 := j * horizontal_width + horizontal_width / 2
-				mut y3 := (i + 1) * vertical_width
-				if cell.group >= 0 {
-					color := app.map_data.groups[cell.group]
-					app.gg.draw_triangle(offset_x + x1, offset_y + y1, offset_x + x2,
-						offset_y + y2, offset_x + x3, offset_y + y3, color)
-					x1 += 2
-					y1 += 1
-					x2 -= 2
-					y2 += 1
-					y3 -= 2
-				}
-				mut color := c_cell_unknown2
-				if cell.is_revealed {
-					color = if cell.typ == .mine { c_cell_mine2 } else { c_cell_revealed2 }
-				}
-				app.gg.draw_triangle(offset_x + x1, offset_y + y1, offset_x + x2, offset_y + y2,
-					offset_x + x3, offset_y + y3, color)
-				if cell.is_revealed && cell.typ == .not_mine {
-					x := j * horizontal_width + horizontal_width / 2 - 4
-					y := i * vertical_width + vertical_width / 4
-					app.gg.draw_text(offset_x + x, offset_y + y, cell.count.str(),
-						color: gx.white
-					)
-				}
-			}
-		}
-	}
+	draw_map(mut app)
 
 	if app.map_data.remaining_mines == 0 && app.map_data.remaining_other == 0 {
 		text := 'You did it!'
@@ -470,6 +407,7 @@ fn draw_game(mut app TriangoliApp) {
 	}
 }
 
+
 fn event_game(mut ev gg.Event, mut app TriangoliApp) {
 	if ev.typ == .key_down {
 		modifier := $if macos { gg.Modifier.super } $else { gg.Modifier.ctrl }
@@ -480,13 +418,13 @@ fn event_game(mut ev gg.Event, mut app TriangoliApp) {
 			&& !app.current_map.is_campaign_map {
 			app.map_data = load_map(app.current_map.map_data)
 			expand_map(mut app.map_data, 30, 10)
-			app.gamestate = .editor
+			app.state = .editor
 		}
 		if ev.key_code == .escape {
 			if app.cli_launch {
 				app.gg.quit()
 			} else {
-				app.gamestate = .menu
+				app.state = .menu
 			}
 		}
 		return
@@ -507,7 +445,6 @@ fn event_game(mut ev gg.Event, mut app TriangoliApp) {
 		filename := sapp.get_dropped_file_path(0)
 		data := os.read_file(filename) or {
 			app.log('failed to read file: $err')
-			eprintln('unable to read file: $err')
 			return
 		}
 		app.current_map = GameMap{'Drag and Drop', filename, false, data}
@@ -522,43 +459,15 @@ fn event_game(mut ev gg.Event, mut app TriangoliApp) {
 	}
 	mark_as_mine := ev.mouse_button == .left
 
-	// figure out which cell
-	x := f32(app.gg.mouse_pos_x) * 2 - horizontal_width / 2
-	y := f32(app.gg.mouse_pos_y) * 2 - vertical_width / 2
-	if x < 0 || y < 0 {
+	cell, cy, cx := pointing_at_cell(app) or {
 		return
 	}
-
-	mut cx := x / horizontal_width / 2
-	cy := y / vertical_width / 2
-
-	if cy >= app.map_data.cells.len {
-		return
-	}
-	row := app.map_data.cells[int(cy)]
-
-	// println("mouse $x $y")
-	// println("cell $cx $cy")
-	if (int(cx) + int(cy)) % 2 == 0 {
-		if math.fmod(cx, 1) + math.fmod(cy, 1) < 1 {
-			cx -= 1
-		}
-	} else {
-		if 1 - math.fmod(cx, 1) + math.fmod(cy, 1) > 1 {
-			cx -= 1
-		}
-	}
-	// println("=> $cx $cy")
-	if cx < 0 || cx >= row.len {
-		return
-	}
-	cell := row[int(cx)]
 
 	if cell.is_revealed || cell.typ == .empty {
 		return
 	}
 	if mark_as_mine == (cell.typ == .mine) {
-		app.map_data.cells[int(cy)][int(cx)].is_revealed = true
+		app.map_data.cells[cy][cx].is_revealed = true
 		if cell.typ == .mine {
 			app.map_data.remaining_mines--
 		} else if cell.typ == .not_mine {
@@ -575,11 +484,161 @@ fn draw_editor(mut app TriangoliApp) {
 		return
 	}
 
+	draw_map(mut app)
+
+	if app.map_data.text != '' {
+		app.gg.set_cfg(gx.TextCfg{ size: 30 })
+		width, height := app.gg.text_size(app.map_data.text)
+		app.gg.draw_text((app.gg.width - width) / 2, app.gg.height - height - 10, app.map_data.text,
+			size: 30)
+		app.gg.set_cfg(gx.TextCfg{})
+	}
+}
+
+fn event_editor(mut ev gg.Event, mut app TriangoliApp) {
+	if app.current_map.is_campaign_map {
+		return
+	}
+	if ev.typ == .key_down {
+		modifier := $if macos { gg.Modifier.super } $else { gg.Modifier.ctrl }
+		if ev.key_code == .s && gg.Modifier(ev.modifiers) == modifier {
+			data := export_map(app.map_data)
+			app.current_map.map_data = data
+			os.write_file(app.current_map.filename, data) or {
+				app.log('failed to save map: $err')
+				return
+			}
+			$if macos {
+				app.log('saved map into ${os.join_path(os.getwd(), app.current_map.filename)}')
+			} $else {
+				app.log('saved map into $app.current_map.filename')
+			}
+		}
+		if ev.key_code == .p && gg.Modifier(ev.modifiers) == modifier {
+			data := export_map(app.map_data)
+			app.current_map.map_data = data
+			app.map_data = load_map(app.current_map.map_data)
+			app.state = .ingame
+			app.log('Switched to playing')
+		}
+		if ev.key_code == .escape {
+			if app.cli_launch {
+				app.gg.quit()
+			} else {
+				app.state = .menu
+			}
+		}
+		return
+	}
+	if ev.typ == .files_droped {
+		if app.cli_launch {
+			app.log('cannot load map when starting using the cli')
+			return
+		}
+		num_dropped := sapp.get_num_dropped_files()
+		if num_dropped < 1 {
+			return
+		}
+		filename := sapp.get_dropped_file_path(0)
+		data := os.read_file(filename) or {
+			app.log('failed to read file: $err')
+			return
+		}
+		app.current_map = GameMap{'Drag and Drop', filename, false, data}
+		app.map_data = load_map(app.current_map.map_data)
+		app.log('opening map $filename')
+	}
+	if ev.typ != .mouse_down && ev.typ != .mouse_scroll {
+		return
+	}
+	if ev.typ == .mouse_down && ev.mouse_button != .left && ev.mouse_button != .right
+		&& ev.mouse_button != .middle {
+		return
+	}
+	if ev.typ == .mouse_scroll && ev.scroll_y == 0 {
+		return
+	}
+
+	cell, cy, cx := pointing_at_cell(app) or {
+		return
+	}
+
+	if ev.typ == .mouse_down {
+		if ev.mouse_button == .middle {
+			if cell.typ != .empty {
+				app.map_data.cells[cy][cx].is_revealed = !cell.is_revealed
+			}
+		} else {
+			if (ev.mouse_button == .left && cell.typ == .mine)
+				|| (ev.mouse_button == .right && cell.typ == .not_mine) {
+				app.map_data.cells[cy][cx].typ = .empty
+				app.map_data.cells[cy][cx].is_revealed = false
+			} else {
+				app.map_data.cells[cy][cx].typ = if ev.mouse_button == .left {
+					CellType.mine
+				} else {
+					CellType.not_mine
+				}
+			}
+		}
+	} else {
+		if cell.typ == .not_mine {
+			mut count := cell.count
+			if ev.scroll_y > 0 {
+				count++
+			} else {
+				count--
+			}
+			if count < 0 {
+				count = 0
+			}
+			app.map_data.cells[cy][cx].count = count
+		}
+	}
+}
+
+
+fn pointing_at_cell(app TriangoliApp) ?(Cell, int, int) {
+	x := f32(app.gg.mouse_pos_x) * 2 - horizontal_width / 2
+	y := f32(app.gg.mouse_pos_y) * 2 - vertical_width / 2
+	if x < 0 || y < 0 {
+		return error('not pointing at cell')
+	}
+
+	mut cx := x / horizontal_width / 2
+	cy := y / vertical_width / 2
+
+	if cy >= app.map_data.cells.len {
+		return error('not pointing at cell')
+	}
+	row := app.map_data.cells[int(cy)]
+
+	// println("mouse $x $y")
+	// println("cell $cx $cy")
+	if (int(cx) + int(cy)) % 2 == 0 {
+		if math.fmod(cx, 1) + math.fmod(cy, 1) < 1 {
+			cx -= 1
+		}
+	} else {
+		if 1 - math.fmod(cx, 1) + math.fmod(cy, 1) > 1 {
+			cx -= 1
+		}
+	}
+	// println("=> $cx $cy")
+	if cx < 0 || cx >= row.len {
+		return error('not pointing at cell')
+	}
+	cell := row[int(cx)]
+	return cell, int(cy), int(cx)
+}
+fn draw_map(mut app TriangoliApp) {
 	offset_x := vertical_width / 2
 	offset_y := horizontal_width / 2
-
 	for i, row in app.map_data.cells {
 		for j, cell in row {
+			if cell.typ == .empty && app.state != .editor {
+				continue
+			}
 			if (i + j) % 2 == 0 {
 				mut x1 := j * horizontal_width - horizontal_width / 2
 				mut y1 := (i + 1) * vertical_width
@@ -603,10 +662,11 @@ fn draw_editor(mut app TriangoliApp) {
 				}
 				app.gg.draw_triangle(offset_x + x1, offset_y + y1, offset_x + x2, offset_y + y2,
 					offset_x + x3, offset_y + y3, color)
-				if cell.typ == .not_mine {
+				if cell.typ == .not_mine && (cell.is_revealed || app.state == .editor) {
 					x := j * horizontal_width + horizontal_width / 2 - 4
 					y := i * vertical_width + vertical_width / 2
-					app.gg.draw_text(offset_x + x, offset_y + y, cell.count.str(),
+					text := if cell.count >= 0 { cell.count.str() } else { '?' }
+					app.gg.draw_text(offset_x + x, offset_y + y, text,
 						color: gx.white
 					)
 				}
@@ -633,152 +693,15 @@ fn draw_editor(mut app TriangoliApp) {
 				}
 				app.gg.draw_triangle(offset_x + x1, offset_y + y1, offset_x + x2, offset_y + y2,
 					offset_x + x3, offset_y + y3, color)
-				if cell.typ == .not_mine {
+				if cell.typ == .not_mine && (cell.is_revealed || app.state == .editor) {
 					x := j * horizontal_width + horizontal_width / 2 - 4
 					y := i * vertical_width + vertical_width / 4
-					app.gg.draw_text(offset_x + x, offset_y + y, cell.count.str(),
+					text := if cell.count >= 0 { cell.count.str() } else { '?' }
+					app.gg.draw_text(offset_x + x, offset_y + y, text,
 						color: gx.white
 					)
 				}
 			}
-		}
-	}
-
-	if app.map_data.text != '' {
-		app.gg.set_cfg(gx.TextCfg{ size: 30 })
-		width, height := app.gg.text_size(app.map_data.text)
-		app.gg.draw_text((app.gg.width - width) / 2, app.gg.height - height - 10, app.map_data.text,
-			size: 30)
-		app.gg.set_cfg(gx.TextCfg{})
-	}
-}
-
-fn event_editor(mut ev gg.Event, mut app TriangoliApp) {
-	if app.current_map.is_campaign_map {
-		return
-	}
-	if ev.typ == .key_down {
-		modifier := $if macos { gg.Modifier.super } $else { gg.Modifier.ctrl }
-		if ev.key_code == .s && gg.Modifier(ev.modifiers) == modifier {
-			data := export_map(app.map_data)
-			app.current_map.map_data = data
-			os.write_file(app.current_map.filename, data) or {
-				app.log('failed to save map: $err')
-				eprintln('failed to save map: $err')
-				return
-			}
-			println('saved map into $app.current_map.filename')
-			app.log('saved map into $app.current_map.filename')
-		}
-		if ev.key_code == .p && gg.Modifier(ev.modifiers) == modifier {
-			data := export_map(app.map_data)
-			app.current_map.map_data = data
-			app.map_data = load_map(app.current_map.map_data)
-			app.gamestate = .ingame
-			app.log('Switched to playing')
-		}
-		if ev.key_code == .escape {
-			if app.cli_launch {
-				app.gg.quit()
-			} else {
-				app.gamestate = .menu
-			}
-		}
-		return
-	}
-	if ev.typ == .files_droped {
-		if app.cli_launch {
-			app.log('cannot load map when starting using the cli')
-			return
-		}
-		num_dropped := sapp.get_num_dropped_files()
-		if num_dropped < 1 {
-			return
-		}
-		filename := sapp.get_dropped_file_path(0)
-		data := os.read_file(filename) or {
-			app.log('failed to read file: $err')
-			eprintln('unable to read file: $err')
-			return
-		}
-		app.current_map = GameMap{'Drag and Drop', filename, false, data}
-		app.map_data = load_map(app.current_map.map_data)
-		app.log('opening map $filename')
-	}
-	if ev.typ != .mouse_down && ev.typ != .mouse_scroll {
-		return
-	}
-	if ev.typ == .mouse_down && ev.mouse_button != .left && ev.mouse_button != .right
-		&& ev.mouse_button != .middle {
-		return
-	}
-	if ev.typ == .mouse_scroll && ev.scroll_y == 0 {
-		return
-	}
-
-	// figure out which cell
-	x := f32(app.gg.mouse_pos_x) * 2 - horizontal_width / 2
-	y := f32(app.gg.mouse_pos_y) * 2 - vertical_width / 2
-	if x < 0 || y < 0 {
-		return
-	}
-
-	mut cx := x / horizontal_width / 2
-	cy := y / vertical_width / 2
-
-	if cy >= app.map_data.cells.len {
-		return
-	}
-	row := app.map_data.cells[int(cy)]
-
-	// println("mouse $x $y")
-	// println("cell $cx $cy")
-	// println("h: $vertical_width w: $horizontal_width")
-	if (int(cx) + int(cy)) % 2 == 0 {
-		if math.fmod(cx, 1) + math.fmod(cy, 1) < 1 {
-			cx -= 1
-		}
-	} else {
-		if 1 - math.fmod(cx, 1) + math.fmod(cy, 1) > 1 {
-			cx -= 1
-		}
-	}
-	// println("=> $cx $cy")
-	if cx < 0 || cx >= row.len {
-		return
-	}
-	cell := row[int(cx)]
-
-	if ev.typ == .mouse_down {
-		if ev.mouse_button == .middle {
-			if cell.typ != .empty {
-				app.map_data.cells[int(cy)][int(cx)].is_revealed = !cell.is_revealed
-			}
-		} else {
-			if (ev.mouse_button == .left && cell.typ == .mine)
-				|| (ev.mouse_button == .right && cell.typ == .not_mine) {
-				app.map_data.cells[int(cy)][int(cx)].typ = .empty
-				app.map_data.cells[int(cy)][int(cx)].is_revealed = false
-			} else {
-				app.map_data.cells[int(cy)][int(cx)].typ = if ev.mouse_button == .left {
-					CellType.mine
-				} else {
-					CellType.not_mine
-				}
-			}
-		}
-	} else {
-		if cell.typ == .not_mine {
-			mut count := cell.count
-			if ev.scroll_y > 0 {
-				count++
-			} else {
-				count--
-			}
-			if count < 0 {
-				count = 0
-			}
-			app.map_data.cells[int(cy)][int(cx)].count = count
 		}
 	}
 }
