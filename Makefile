@@ -2,7 +2,7 @@ V=v
 
 build: build-macos build-win
 update:
-	tar --create --verbose -a --cd dist --file dist/Triangoli.app.tar.gz Triangoli.app
+	tar --create --verbose -a --cd dist --file dist/Triangoli.app.tar.gz Triangoli.app install-libgc.sh
 	cp dist/triangoli.exe ../triangoli-web/public/assets/game/
 	cp dist/Triangoli.app.tar.gz ../triangoli-web/public/assets/game/
 
