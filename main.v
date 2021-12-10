@@ -10,7 +10,7 @@ import x.json2
 
 const (
 	c_background     = gx.hex(0x94A3B8FF)
-	c_anim           = gx.hex(0x8F9EB4FF)
+	c_anim           = gx.hex(0xE2E8F0FF)
 	c_cell_empty     = gx.hex(0x8A9AAFAA)
 	c_cell_empty2    = gx.hex(0x728299AA)
 	c_cell_unknown   = gx.hex(0x334155FF)
@@ -180,7 +180,7 @@ fn init(mut app TriangoliApp) {
 
 fn frame(mut app TriangoliApp) {
 	app.gg.begin()
-	alpha := 0xC0 - byte(math.sin(f64(app.gg.frame) / 60) * 0x30)
+	alpha := 0x80 - byte(math.sin(f64(app.gg.frame) / 60) * 0x30)
 	background_color := gx.hex(c_anim.rgba8() & 0xffffff00 + alpha)
 	app.gg.draw_image_with_config(
 		img: &app.background_noise,
