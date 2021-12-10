@@ -3,7 +3,6 @@ import gg
 import gx
 import math
 import os
-import rand
 import sokol.sapp
 import time
 import v.embed_file
@@ -21,14 +20,18 @@ const (
 	c_cell_revealed  = gx.hex(0x172033FF)
 	c_cell_revealed2 = gx.hex(0x0F172AFF)
 
+	default_window_width  = 1280
+	default_window_height = 720
+
 	horizontal_width = 40
 	vertical_width   = int(math.sqrt((horizontal_width * 2) * (horizontal_width * 2) - horizontal_width * horizontal_width))
 
-	log_timeout      = 5 * time.second
+	log_timeout      = 2 * time.second
 
+	background_noise = ($embed_file('assets/background_noise.png')).to_bytes()
 	compaign_maps    = [
-		mk_campaign_map('Map 01', $embed_file('campaign/map00-01.tmap')),
-		mk_campaign_map('Map 02', $embed_file('campaign/map00-02.tmap')),
+		mk_campaign_map('Map 01', $embed_file('assets/campaign/map00-01.tmap', .zlib)),
+		mk_campaign_map('Map 02', $embed_file('assets/campaign/map00-02.tmap', .zlib)),
 	]
 )
 
@@ -64,7 +67,7 @@ mut:
 	current_map GameMap
 	map_data    MapData
 
-	background_animation []Point
+	background_noise gg.Image
 	// last_frame time.Time
 	cli_launch bool
 
@@ -96,14 +99,6 @@ enum CellType {
 	empty
 }
 
-struct Point {
-mut:
-	x  f64
-	y  f64
-	vx f64
-	vy f64
-}
-
 struct Log {
 	text string
 	time time.Time
@@ -113,9 +108,10 @@ fn main() {
 	mut app := &TriangoliApp{}
 	app.gg = gg.new_context(
 		bg_color: c_background
-		width: 1280
-		height: 720
+		width: default_window_width
+		height: default_window_height
 		window_title: 'Triangoli'
+		init_fn: init
 		frame_fn: frame
 		event_fn: event
 		user_data: app
@@ -162,61 +158,23 @@ fn main() {
 		}
 	}
 
-	for _ in 0 .. 40 {
-		app.background_animation << Point{rand.f64(), rand.f64(), rand.f64() * 2 - 1, rand.f64() * 2 - 1}
-	}
-
 	app.gg.run()
+}
+
+fn init(mut app TriangoliApp) {
+	app.background_noise = app.gg.create_image_from_byte_array(background_noise)
 }
 
 fn frame(mut app TriangoliApp) {
 	app.gg.begin()
-	for mut point in app.background_animation {
-		axc := (rand.f64() * 2 - 1) * 0.005
-		ayc := (rand.f64() * 2 - 1) * 0.005
-		point.vx = math.max(-1, math.min(1, point.vx + axc))
-		point.vy = math.max(-1, math.min(1, point.vy + ayc))
-		point.x = math.fmod(point.x + point.vx * 0.00002, 1)
-		point.y = math.fmod(point.y + point.vy * 0.00002, 1)
-		if point.x < 0 {
-			point.x = 1 - point.x
-		}
-		if point.y < 0 {
-			point.y = 1 - point.y
-		}
-		// app.gg.draw_circle(int(point.x * app.gg.width), int(point.y * app.gg.height), 2, c_anim)
-	}
-	for i, mut point in app.background_animation {
-		mut nearest1 := -1
-		mut nearest1d := f64(1)
-		mut nearest2 := -1
-		mut nearest2d := f64(1)
-		for j, point2 in app.background_animation {
-			distance := math.abs(point.x - point2.x) + math.abs(point.y - point2.y)
-			if distance > 0.1 && i != j {
-				if distance < nearest1d {
-					nearest2 = nearest1
-					nearest2d = nearest1d
-					nearest1 = j
-					nearest1d = distance
-				} else if distance < nearest2d {
-					nearest2 = j
-					nearest2d = distance
-				}
-			}
-		}
-		if nearest1 >= 0 && nearest2 >= 0 {
-			x1 := int(point.x * app.gg.width)
-			y1 := int(point.y * app.gg.height)
-			point2 := app.background_animation[nearest1]
-			x2 := int(point2.x * app.gg.width)
-			y2 := int(point2.y * app.gg.height)
-			point3 := app.background_animation[nearest2]
-			x3 := int(point3.x * app.gg.width)
-			y3 := int(point3.y * app.gg.height)
-			app.gg.draw_triangle(x1, y1, x2, y2, x3, y3, c_anim)
-		}
-	}
+	alpha := 0xC0 - byte(math.sin(f64(app.gg.frame) / 60) * 0x30)
+	background_color := gx.hex(c_anim.rgba8() & 0xffffff00 + alpha)
+	app.gg.draw_image_with_config(
+		img: &app.background_noise,
+		img_rect: gg.Rect{0, 0, default_window_width, default_window_height},
+		part_rect: gg.Rect{0, 0, default_window_width, default_window_height},
+		color: background_color
+	)
 	match app.gamestate {
 		.menu { draw_menu(mut app) }
 		.ingame { draw_game(mut app) }
