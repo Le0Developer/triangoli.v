@@ -400,7 +400,7 @@ fn load_main_menu_map(mut app TriangoliApp) {
 	mut worlds_done := [false, false, false, false, false, false, false]!
 	for i in 1 .. (worlds_done.len + 1) {
 		for j in 1 .. 4 {
-			if '0$i-$j' !in app.savestate_completion {
+			if '0$i-0$j' !in app.savestate_completion {
 				break
 			}
 			if j == 3 {
@@ -413,7 +413,7 @@ fn load_main_menu_map(mut app TriangoliApp) {
 			if app.map_data.cells[i][j].typ == .mine {
 				app.map_data.cells[i][j].id = map_ids[map_ids_idx]
 				world := map_ids[map_ids_idx].all_before('-').int()
-				if world != 1 && !worlds_done[world - 2] {
+				if world != 1 && !worlds_done[world - 1] {
 					app.map_data.cells[i][j].typ = .empty
 				}
 				if map_ids[map_ids_idx] in app.savestate_completion {
@@ -612,7 +612,7 @@ fn event_game(mut ev gg.Event, mut app TriangoliApp) {
 			}
 			if app.map_data.remaining_mines == 0 && app.map_data.remaining_other == 0 {
 				app.log('Map cleared!')
-				if !app.current_map.is_custom_map {
+				if !app.current_map.is_custom_map && app.current_map.name !in app.savestate_completion {
 					app.savestate_completion << app.current_map.name
 					save_savestate(mut app)
 				}
