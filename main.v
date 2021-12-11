@@ -267,7 +267,7 @@ fn export_map(md MapData) string {
 		mut rowdata := []json2.Any{}
 		for cell in row {
 			mut celldata := map[string]json2.Any{}
-			if cell.is_revealed {
+			if cell.is_revealed && cell.typ != .empty {
 				celldata['is_revealed'] = true
 			}
 			if cell.typ != .empty {
