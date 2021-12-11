@@ -70,7 +70,6 @@ mut:
 	map_data    MapData
 
 	background_noise gg.Image
-	// last_frame time.Time
 	cli_launch bool
 
 	logs []Log
@@ -525,10 +524,6 @@ fn draw_game(mut app TriangoliApp) {
 	app.gg.draw_text(0, 0, 'Mistakes: $app.map_data.mistakes  Remaining: $app.map_data.remaining_mines',
 		size: size)
 
-	// diff := time.now() - app.last_frame
-	// app.last_frame = time.now()
-	// app.gg.draw_text_def(0, 10, "${1 / (f64(diff.nanoseconds()) / time.second)} fps")
-
 	draw_map(mut app)
 
 	if app.map_data.remaining_mines == 0 && app.map_data.remaining_other == 0 {
@@ -747,8 +742,6 @@ fn pointing_at_cell(app TriangoliApp) ?(Cell, int, int) {
 	}
 	row := app.map_data.cells[int(cy)]
 
-	// println("mouse $x $y")
-	// println("cell $cx $cy")
 	if (int(cx) + int(cy)) % 2 == 0 {
 		if math.fmod(cx, 1) + math.fmod(cy, 1) < 1 {
 			cx -= 1
@@ -758,7 +751,6 @@ fn pointing_at_cell(app TriangoliApp) ?(Cell, int, int) {
 			cx -= 1
 		}
 	}
-	// println("=> $cx $cy")
 	if cx < 0 || cx >= row.len {
 		return error('not pointing at cell')
 	}
