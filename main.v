@@ -817,8 +817,9 @@ fn draw_map(mut app TriangoliApp) {
 					x := j * horizontal_width + horizontal_width / 2 - 4
 					y := i * vertical_width + vertical_width / 2
 					text := if cell.count >= 0 { cell.count.str() } else { '?' }
-					app.gg.draw_text(offset_x + x, offset_y + y, text,
-						color: gx.white
+					app.gg.draw_text(int(app.gg.scale / 2 * (offset_x + x)), int(app.gg.scale / 2 * (offset_y + y)), text,
+						color: gx.white,
+						size: int(8 * app.gg.scale)
 					)
 				}
 			} else {
@@ -848,8 +849,9 @@ fn draw_map(mut app TriangoliApp) {
 					x := j * horizontal_width + horizontal_width / 2 - 4
 					y := i * vertical_width + vertical_width / 4
 					text := if cell.count >= 0 { cell.count.str() } else { '?' }
-					app.gg.draw_text(offset_x + x, offset_y + y, text,
-						color: gx.white
+					app.gg.draw_text(int(app.gg.scale / 2 * (offset_x + x)), int(app.gg.scale / 2 * (offset_y + y)), text,
+						color: gx.white,
+						size: int(8 * app.gg.scale)
 					)
 				}
 			}
