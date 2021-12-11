@@ -212,7 +212,7 @@ fn frame(mut app TriangoliApp) {
 	if app.logs.len > 0 {
 		size := 8 * int(app.gg.scale)
 		for i, log in app.logs {
-			app.gg.draw_text(1, app.gg.height - 21 - size * i, log.text, size: size)
+			app.gg.draw_text(1, int(app.gg.scale / 2 * app.gg.height) - size * (app.logs.len - i), log.text, size: size)
 		}
 	}
 	app.gg.end()
