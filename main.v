@@ -30,8 +30,9 @@ const (
 
 	background_noise      = ($embed_file('assets/background_noise.png')).to_bytes()
 	compaign_maps         = [
-		mk_campaign_map('01-01', $embed_file('assets/campaign/map00-01.tmap', .zlib)),
-		mk_campaign_map('01-02', $embed_file('assets/campaign/map00-02.tmap', .zlib)),
+		mk_campaign_map('01-01', $embed_file('assets/campaign/01-01.tmap', .zlib)),
+		mk_campaign_map('01-02', $embed_file('assets/campaign/01-02.tmap', .zlib)),
+		mk_campaign_map('01-03', $embed_file('assets/campaign/01-03.tmap', .zlib)),
 	]
 	main_menu_map         = GameMap{'main', 'main_menu.tmap', false, ($embed_file('assets/main_menu.tmap', .zlib)).to_string()}
 )
