@@ -493,14 +493,6 @@ fn draw_editor(mut app TriangoliApp) {
 	}
 
 	draw_map(mut app)
-
-	if app.map_data.text != '' {
-		app.gg.set_cfg(gx.TextCfg{ size: 30 })
-		width, height := app.gg.text_size(app.map_data.text)
-		app.gg.draw_text((app.gg.width - width) / 2, app.gg.height - height - 10, app.map_data.text,
-			size: 30)
-		app.gg.set_cfg(gx.TextCfg{})
-	}
 }
 
 fn event_editor(mut ev gg.Event, mut app TriangoliApp) {
