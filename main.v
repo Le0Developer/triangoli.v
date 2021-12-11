@@ -223,6 +223,9 @@ fn event(mut ev gg.Event, mut app TriangoliApp) {
 		normalized_width := f64(ev.framebuffer_width) / default_window_width
 		normalized_height := f64(ev.framebuffer_height) / default_window_height
 		app.gg.scale = f32(math.min(normalized_width, normalized_height))
+		if app.gg.scale > 5 {
+			app.gg.scale = 5
+		}
 	}
 	match app.state {
 		.menu { event_menu(mut ev, mut app) }
