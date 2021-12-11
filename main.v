@@ -30,9 +30,10 @@ const (
 
 	background_noise = ($embed_file('assets/background_noise.png')).to_bytes()
 	compaign_maps    = [
-		mk_campaign_map('Map 01', $embed_file('assets/campaign/map00-01.tmap', .zlib)),
-		mk_campaign_map('Map 02', $embed_file('assets/campaign/map00-02.tmap', .zlib)),
+		mk_campaign_map('01-01', $embed_file('assets/campaign/map00-01.tmap', .zlib)),
+		mk_campaign_map('01-02', $embed_file('assets/campaign/map00-02.tmap', .zlib)),
 	]
+	main_menu_map    = GameMap{'main', 'main_menu.tmap', false, ($embed_file('assets/main_menu.tmap', .zlib)).to_string()}
 )
 
 fn mk_campaign_map(name string, data embed_file.EmbedFileData) GameMap {
@@ -72,12 +73,15 @@ mut:
 	cli_launch bool
 
 	logs []Log
+
+	savestate_slot       string = '1'
+	savestate_completion []string
 }
 
 fn (mut app TriangoliApp) log(text string) {
 	log := Log{text, time.now()}
 	app.logs << log
-	eprintln("[LOG] $text")
+	eprintln('[LOG] $text')
 }
 
 enum TriangoliState {
@@ -92,6 +96,7 @@ mut:
 	is_revealed bool
 	count       int
 	group       int
+	id          string
 }
 
 enum CellType {
@@ -171,6 +176,13 @@ fn main() {
 		}
 	}
 
+	if !app.cli_launch {
+		load_savestate(mut app)
+	}
+	if app.state == .menu {
+		load_main_menu_map(mut app)
+	}
+
 	app.gg.run()
 }
 
@@ -218,6 +230,62 @@ fn event(mut ev gg.Event, mut app TriangoliApp) {
 	}
 }
 
+fn savestate_location() string {
+	$if macos {
+		// ~/Library/Application Support/triangoli
+		return os.join_path(os.home_dir(), 'Library', 'Application Support', 'triangoli')
+	}
+	$else $if windows {
+		// %APPDATA%\traingoli
+		if os.getenv('APPDATA') != '' {
+			return os.join_path(os.getenv('APPDATA'), 'triangoli')
+		}
+		// ~/.triangoli (fallback)
+		return os.join_path(os.home_dir(), '.triangoli')
+	}
+	$else {
+		// ~/.triangoli
+		return os.join_path(os.home_dir(), '.triangoli')
+	}
+}
+
+fn load_savestate(mut app TriangoliApp) {
+	app.savestate_completion = []string{}
+	loc := os.join_path(savestate_location(), 'slot_$app.savestate_slot')
+	if !os.exists(loc) {
+		return
+	}
+	raw_data := os.read_file(loc) or {
+		app.log('failed to read savestate: $err')
+		return
+	}
+	decoded_data := json2.raw_decode(raw_data) or { panic(err) }
+	for value in decoded_data.arr() {
+		app.savestate_completion << value.str()
+	}
+}
+
+fn save_savestate(mut app TriangoliApp) {
+	dir := savestate_location()
+	loc := os.join_path(dir, 'slot_$app.savestate_slot')
+
+	if !os.exists(dir) {
+		os.mkdir_all(dir) or {
+			app.log('failed to save savestate: $err')
+			return
+		}
+	}
+	mut data := []json2.Any{}
+	for completed in app.savestate_completion {
+		data << json2.Any(completed)
+	}
+	os.write_file(loc, data.str()) or {
+		app.log('failed to save savestate: $err')
+		return
+	}
+	app.log('progress saved')
+}
+
 fn load_map(raw_data string) MapData {
 	mut md := MapData{}
 	decoded_data := json2.raw_decode(raw_data) or { panic(err) }
@@ -240,6 +308,7 @@ fn load_map(raw_data string) MapData {
 				is_revealed: (raw_cell['is_revealed'] or { false }).bool()
 				count: (raw_cell['count'] or { 0 }).int()
 				group: (raw_cell['group'] or { -1 }).int()
+				id: (raw_cell['id'] or { '' }).str()
 			}
 			row << cell
 			if !cell.is_revealed && typ != .empty {
@@ -279,6 +348,9 @@ fn export_map(md MapData) string {
 			if cell.group >= 0 {
 				celldata['group'] = cell.group
 			}
+			if cell.id != '' {
+				celldata['id'] = cell.id
+			}
 			rowdata << celldata
 		}
 		// "compression"
@@ -305,26 +377,64 @@ fn export_map(md MapData) string {
 fn expand_map(mut md MapData, width int, height int) {
 	for mut row in md.cells {
 		for row.len < width {
-			cell := Cell{.empty, false, 0, -1}
+			cell := Cell{.empty, false, 0, -1, ''}
 			row << cell
 		}
 	}
 	for md.cells.len < height {
 		mut row := []Cell{}
 		for _ in 0 .. width {
-			cell := Cell{.empty, false, 0, -1}
+			cell := Cell{.empty, false, 0, -1, ''}
 			row << cell
 		}
 		md.cells << row
 	}
 }
 
-fn draw_menu(mut app TriangoliApp) {
-	app.gg.draw_text_def(5, 5, 'menu')
-	app.gg.draw_text_def(5, 65, 'compaign:')
-	for i, cmap in compaign_maps {
-		app.gg.draw_text(5 + 100 * i, 85, cmap.name, color: gx.dark_blue)
+fn load_main_menu_map(mut app TriangoliApp) {
+	app.current_map = main_menu_map
+	app.map_data = load_map(main_menu_map.map_data)
+	// 'campaign/map01-01.tmap'
+	map_ids := [
+		'01-01', '04-01',
+		'01-02', '01-03', '04-02', '04-03',
+		'02-01', '07-01', '05-01',
+		'02-02', '02-03', '05-02', '05-03',
+		// none
+		'03-01', '07-02', '07-03', '06-01',
+		'03-02', '03-03', '06-02', '06-03'
+	]!
+	mut map_ids_idx := 0
+	mut groups_done := [false, false, false, false, false, false, false]!
+	for i in 1 .. (groups_done.len + 1) {
+		for j in 1 .. 4 {
+			if '0$i-$j' !in app.savestate_completion {
+				break
+			}
+			if j == 3 {
+				groups_done[i] = true
+			}
+		}
 	}
+	for i in 0 .. app.map_data.cells.len {
+		for j in 0 .. app.map_data.cells[i].len {
+			if app.map_data.cells[i][j].typ == .mine {
+				app.map_data.cells[i][j].id = map_ids[map_ids_idx]
+				if map_ids[map_ids_idx] in app.savestate_completion {
+					app.map_data.cells[i][j].group = 0
+				}
+				group := map_ids[map_ids_idx].all_before('-').int()
+				if group == 1 || groups_done[group - 2] {
+					app.map_data.cells[i][j].is_revealed = true
+				}
+				map_ids_idx++
+			}
+		}
+	}
+}
+
+fn draw_menu(mut app TriangoliApp) {
+	draw_map(mut app)
 }
 
 fn event_menu(mut ev gg.Event, mut app TriangoliApp) {
@@ -346,8 +456,33 @@ fn event_menu(mut ev gg.Event, mut app TriangoliApp) {
 				app.state = .editor
 				app.log('opening new map in editor')
 			}
+			// TODO: add more
+			if ev.modifiers == 0 {
+				match ev.key_code {
+					._1 {
+						app.savestate_slot = '1'
+					}
+					._2 {
+						app.savestate_slot = '2'
+					}
+					._3 {
+						app.savestate_slot = '3'
+					}
+					.escape {
+						app.gg.quit()
+						return
+					}
+					else {
+						return
+					}
+				}
+				load_savestate(mut app)
+				load_main_menu_map(mut app)
+				app.log('loaded save state slot: $app.savestate_slot')
+			}
+			if ev.key_code == ._1 {
+			}
 			if ev.key_code == .escape {
-				app.gg.quit()
 			}
 		}
 		.files_droped {
@@ -369,19 +504,26 @@ fn event_menu(mut ev gg.Event, mut app TriangoliApp) {
 			if ev.mouse_button != .left {
 				return
 			}
-			font_size := 11
-			if app.gg.mouse_pos_y < 85 || app.gg.mouse_pos_y > 85 + font_size {
+			cell, _, _ := pointing_at_cell(app) or {
 				return
 			}
-			cmap_id := int(app.gg.mouse_pos_x - 5) / 100
-			if cmap_id >= compaign_maps.len {
+			if cell.typ != .mine {
 				return
 			}
-			cmap := compaign_maps[cmap_id]
-			app.current_map = cmap
-			app.map_data = load_map(cmap.map_data)
-			app.state = .ingame
-			app.log('loading campaign $cmap.name')
+			if !cell.is_revealed {
+				app.log('you have not unlocked this campaign map yet')
+				return
+			}
+			for cmap in compaign_maps {
+				if cmap.name == cell.id {
+					app.current_map = cmap
+					app.map_data = load_map(cmap.map_data)
+					app.state = .ingame
+					app.log('playing campaign $cmap.name')
+					return
+				}
+			}
+			app.log('unable to find campaign: $cell.id, maybe the map is not implemented yet?')
 		}
 		else {}
 	}
@@ -432,6 +574,7 @@ fn event_game(mut ev gg.Event, mut app TriangoliApp) {
 				if app.cli_launch {
 					app.gg.quit()
 				} else {
+					load_main_menu_map(mut app)
 					app.state = .menu
 				}
 			}
@@ -482,6 +625,13 @@ fn event_game(mut ev gg.Event, mut app TriangoliApp) {
 				app.map_data.mistakes++
 				app.log('Mistake!')
 			}
+			if app.map_data.remaining_mines == 0 && app.map_data.remaining_other == 0 {
+				app.log('Map cleared!')
+				if !app.current_map.is_custom_map {
+					app.savestate_completion << app.current_map.name
+					save_savestate(mut app)
+				}
+			}
 		}
 		else {}
 	}
@@ -526,6 +676,7 @@ fn event_editor(mut ev gg.Event, mut app TriangoliApp) {
 				if app.cli_launch {
 					app.gg.quit()
 				} else {
+					load_main_menu_map(mut app)
 					app.state = .menu
 				}
 			}
