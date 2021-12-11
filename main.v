@@ -532,17 +532,17 @@ fn draw_game(mut app TriangoliApp) {
 	draw_map(mut app)
 
 	if app.map_data.remaining_mines == 0 && app.map_data.remaining_other == 0 {
-		text := 'You did it!'
-		width, height := app.gg.text_size(text)
-		app.gg.draw_rect((app.gg.width - width) / 2 - 10, (app.gg.height - height) / 2 - 5,
-			width + 20, height + 10, gx.black)
-		app.gg.draw_text((app.gg.width - width) / 2, (app.gg.height - height) / 2, text,
-			color: gx.white)
+		text := 'Map cleared!'
+		app.gg.set_cfg(gx.TextCfg{ size: size * 2 })
+		width := app.gg.text_width(text)
+		app.gg.draw_rect((app.gg.width - width) / 2 - 10, (app.gg.height - size) / 2 - size - 5,
+			width + 20, 2 * size + 10, gx.black)
+		app.gg.draw_text(int(app.gg.scale * app.gg.width) / 4, int(app.gg.scale * app.gg.height / 4) - size + 5, text,
+			color: gx.white, size: size * 2, align: .center, vertical_align: .middle)
 	}
 
 	if app.map_data.text != '' {
-		app.gg.set_cfg(gx.TextCfg{ size: size * 2 })
-		app.gg.draw_text(int(app.gg.scale * app.gg.width / 4), int(app.gg.scale * app.gg.height / 2) - size * 2 - 10,
+		app.gg.draw_text(int(app.gg.scale * app.gg.width / 4), int(app.gg.scale * app.gg.height / 4) - size,
 			app.map_data.text, size: size * 2, align: .center)
 	}
 }
