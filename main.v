@@ -197,14 +197,20 @@ fn frame(mut app TriangoliApp) {
 		app.logs.delete(0)
 	}
 	if app.logs.len > 0 {
+		size := 8 * int(app.gg.scale)
 		for i, log in app.logs {
-			app.gg.draw_text_def(1, app.gg.height - 21 - 20 * i, log.text)
+			app.gg.draw_text(1, app.gg.height - 21 - size * i, log.text, size: size)
 		}
 	}
 	app.gg.end()
 }
 
 fn event(mut ev gg.Event, mut app TriangoliApp) {
+	if ev.typ == .resized {
+		normalized_width := f64(ev.framebuffer_width) / default_window_width
+		normalized_height := f64(ev.framebuffer_height) / default_window_height
+		app.gg.scale = f32(math.min(normalized_width, normalized_height))
+	}
 	match app.state {
 		.menu { event_menu(mut ev, mut app) }
 		.ingame { event_game(mut ev, mut app) }
@@ -382,7 +388,8 @@ fn event_menu(mut ev gg.Event, mut app TriangoliApp) {
 }
 
 fn draw_game(mut app TriangoliApp) {
-	app.gg.draw_text_def(0, 0, 'Mistakes: $app.map_data.mistakes  Remaining: $app.map_data.remaining_mines')
+	size := 8 * int(app.gg.scale)
+	app.gg.draw_text(0, 0, 'Mistakes: $app.map_data.mistakes  Remaining: $app.map_data.remaining_mines', size: size)
 
 	// diff := time.now() - app.last_frame
 	// app.last_frame = time.now()
@@ -400,11 +407,10 @@ fn draw_game(mut app TriangoliApp) {
 	}
 
 	if app.map_data.text != '' {
-		app.gg.set_cfg(gx.TextCfg{ size: 30 })
-		width, height := app.gg.text_size(app.map_data.text)
-		app.gg.draw_text((app.gg.width - width) / 2, app.gg.height - height - 10, app.map_data.text,
-			size: 30)
-		app.gg.set_cfg(gx.TextCfg{})
+		app.gg.set_cfg(gx.TextCfg{ size: size * 2 })
+		width := app.gg.text_width(app.map_data.text)
+		app.gg.draw_text((int(app.gg.scale * app.gg.width / 2) - width) / 2, int(app.gg.scale * app.gg.height / 2) - size * 2 - 10, app.map_data.text,
+			size: size * 2)
 	}
 }
 
