@@ -9,31 +9,31 @@ import v.embed_file
 import x.json2
 
 const (
-	c_background     = gx.hex(0x94A3B8FF)
-	c_anim           = gx.hex(0xE2E8F0FF)
-	c_cell_empty     = gx.hex(0x8A9AAFAA)
-	c_cell_empty2    = gx.hex(0x728299AA)
-	c_cell_unknown   = gx.hex(0x334155FF)
-	c_cell_unknown2  = gx.hex(0x293548FF)
-	c_cell_mine      = gx.hex(0x3073F1FF)
-	c_cell_mine2     = gx.hex(0x2563EBFF)
-	c_cell_revealed  = gx.hex(0x172033FF)
-	c_cell_revealed2 = gx.hex(0x0F172AFF)
+	c_background          = gx.hex(0x94A3B8FF)
+	c_anim                = gx.hex(0xE2E8F0FF)
+	c_cell_empty          = gx.hex(0x8A9AAFAA)
+	c_cell_empty2         = gx.hex(0x728299AA)
+	c_cell_unknown        = gx.hex(0x334155FF)
+	c_cell_unknown2       = gx.hex(0x293548FF)
+	c_cell_mine           = gx.hex(0x3073F1FF)
+	c_cell_mine2          = gx.hex(0x2563EBFF)
+	c_cell_revealed       = gx.hex(0x172033FF)
+	c_cell_revealed2      = gx.hex(0x0F172AFF)
 
 	default_window_width  = 1280
 	default_window_height = 720
 
-	horizontal_width = 40
-	vertical_width   = int(math.sqrt((horizontal_width * 2) * (horizontal_width * 2) - horizontal_width * horizontal_width))
+	horizontal_width      = 40
+	vertical_width        = int(math.sqrt((horizontal_width * 2) * (horizontal_width * 2) - horizontal_width * horizontal_width))
 
-	log_timeout      = 2 * time.second
+	log_timeout           = 2 * time.second
 
-	background_noise = ($embed_file('assets/background_noise.png')).to_bytes()
-	compaign_maps    = [
+	background_noise      = ($embed_file('assets/background_noise.png')).to_bytes()
+	compaign_maps         = [
 		mk_campaign_map('01-01', $embed_file('assets/campaign/map00-01.tmap', .zlib)),
 		mk_campaign_map('01-02', $embed_file('assets/campaign/map00-02.tmap', .zlib)),
 	]
-	main_menu_map    = GameMap{'main', 'main_menu.tmap', false, ($embed_file('assets/main_menu.tmap', .zlib)).to_string()}
+	main_menu_map         = GameMap{'main', 'main_menu.tmap', false, ($embed_file('assets/main_menu.tmap', .zlib)).to_string()}
 )
 
 fn mk_campaign_map(name string, data embed_file.EmbedFileData) GameMap {
@@ -62,7 +62,7 @@ mut:
 
 struct TriangoliApp {
 mut:
-	gg        &gg.Context    = 0
+	gg    &gg.Context    = 0
 	state TriangoliState = .menu
 
 	current_map GameMap
@@ -195,9 +195,9 @@ fn frame(mut app TriangoliApp) {
 	alpha := 0x80 - byte(math.sin(f64(app.gg.frame) / 60) * 0x30)
 	background_color := gx.hex(c_anim.rgba8() & 0xffffff00 + alpha)
 	app.gg.draw_image_with_config(
-		img: &app.background_noise,
-		img_rect: gg.Rect{0, 0, default_window_width, default_window_height},
-		part_rect: gg.Rect{0, 0, default_window_width, default_window_height},
+		img: &app.background_noise
+		img_rect: gg.Rect{0, 0, default_window_width, default_window_height}
+		part_rect: gg.Rect{0, 0, default_window_width, default_window_height}
 		color: background_color
 	)
 	match app.state {
@@ -234,16 +234,14 @@ fn savestate_location() string {
 	$if macos {
 		// ~/Library/Application Support/triangoli
 		return os.join_path(os.home_dir(), 'Library', 'Application Support', 'triangoli')
-	}
-	$else $if windows {
+	} $else $if windows {
 		// %APPDATA%\traingoli
 		if os.getenv('APPDATA') != '' {
 			return os.join_path(os.getenv('APPDATA'), 'triangoli')
 		}
 		// ~/.triangoli (fallback)
 		return os.join_path(os.home_dir(), '.triangoli')
-	}
-	$else {
+	} $else {
 		// ~/.triangoli
 		return os.join_path(os.home_dir(), '.triangoli')
 	}
@@ -395,15 +393,9 @@ fn load_main_menu_map(mut app TriangoliApp) {
 	app.current_map = main_menu_map
 	app.map_data = load_map(main_menu_map.map_data)
 	// 'campaign/map01-01.tmap'
-	map_ids := [
-		'01-01', '04-01',
-		'01-02', '01-03', '04-02', '04-03',
-		'02-01', '07-01', '05-01',
-		'02-02', '02-03', '05-02', '05-03',
-		// none
-		'03-01', '07-02', '07-03', '06-01',
-		'03-02', '03-03', '06-02', '06-03'
-	]!
+	map_ids := ['01-01', '04-01', '01-02', '01-03', '04-02', '04-03', '02-01', '07-01', '05-01',
+		'02-02', '02-03', '05-02', '05-03', '03-01', '07-02', '07-03', '06-01', '03-02', '03-03',
+		'06-02', '06-03']!
 	mut map_ids_idx := 0
 	mut groups_done := [false, false, false, false, false, false, false]!
 	for i in 1 .. (groups_done.len + 1) {
@@ -504,9 +496,7 @@ fn event_menu(mut ev gg.Event, mut app TriangoliApp) {
 			if ev.mouse_button != .left {
 				return
 			}
-			cell, _, _ := pointing_at_cell(app) or {
-				return
-			}
+			cell, _, _ := pointing_at_cell(app) or { return }
 			if cell.typ != .mine {
 				return
 			}
@@ -531,7 +521,8 @@ fn event_menu(mut ev gg.Event, mut app TriangoliApp) {
 
 fn draw_game(mut app TriangoliApp) {
 	size := 8 * int(app.gg.scale)
-	app.gg.draw_text(0, 0, 'Mistakes: $app.map_data.mistakes  Remaining: $app.map_data.remaining_mines', size: size)
+	app.gg.draw_text(0, 0, 'Mistakes: $app.map_data.mistakes  Remaining: $app.map_data.remaining_mines',
+		size: size)
 
 	// diff := time.now() - app.last_frame
 	// app.last_frame = time.now()
@@ -551,11 +542,10 @@ fn draw_game(mut app TriangoliApp) {
 	if app.map_data.text != '' {
 		app.gg.set_cfg(gx.TextCfg{ size: size * 2 })
 		width := app.gg.text_width(app.map_data.text)
-		app.gg.draw_text((int(app.gg.scale * app.gg.width / 2) - width) / 2, int(app.gg.scale * app.gg.height / 2) - size * 2 - 10, app.map_data.text,
-			size: size * 2)
+		app.gg.draw_text((int(app.gg.scale * app.gg.width / 2) - width) / 2, int(app.gg.scale * app.gg.height / 2) - size * 2 - 10,
+			app.map_data.text, size: size * 2)
 	}
 }
-
 
 fn event_game(mut ev gg.Event, mut app TriangoliApp) {
 	match ev.typ {
@@ -607,9 +597,7 @@ fn event_game(mut ev gg.Event, mut app TriangoliApp) {
 			}
 			mark_as_mine := ev.mouse_button == .left
 
-			cell, cy, cx := pointing_at_cell(app) or {
-				return
-			}
+			cell, cy, cx := pointing_at_cell(app) or { return }
 
 			if cell.is_revealed || cell.typ == .empty {
 				return
@@ -703,9 +691,7 @@ fn event_editor(mut ev gg.Event, mut app TriangoliApp) {
 			if ev.mouse_button != .left && ev.mouse_button != .right && ev.mouse_button != .middle {
 				return
 			}
-			cell, cy, cx := pointing_at_cell(app) or {
-				return
-			}
+			cell, cy, cx := pointing_at_cell(app) or { return }
 			if ev.mouse_button == .middle {
 				if cell.typ != .empty {
 					app.map_data.cells[cy][cx].is_revealed = !cell.is_revealed
@@ -728,9 +714,7 @@ fn event_editor(mut ev gg.Event, mut app TriangoliApp) {
 			if ev.scroll_y == 0 {
 				return
 			}
-			cell, cy, cx := pointing_at_cell(app) or {
-				return
-			}
+			cell, cy, cx := pointing_at_cell(app) or { return }
 			if cell.typ == .not_mine {
 				mut count := cell.count
 				if ev.scroll_y > 0 {
@@ -747,7 +731,6 @@ fn event_editor(mut ev gg.Event, mut app TriangoliApp) {
 		else {}
 	}
 }
-
 
 fn pointing_at_cell(app TriangoliApp) ?(Cell, int, int) {
 	x := f32(app.gg.mouse_pos_x) * 2 - horizontal_width / 2
@@ -782,6 +765,7 @@ fn pointing_at_cell(app TriangoliApp) ?(Cell, int, int) {
 	cell := row[int(cx)]
 	return cell, int(cy), int(cx)
 }
+
 fn draw_map(mut app TriangoliApp) {
 	offset_x := vertical_width / 2
 	offset_y := horizontal_width / 2
@@ -817,8 +801,9 @@ fn draw_map(mut app TriangoliApp) {
 					x := j * horizontal_width + horizontal_width / 2 - 4
 					y := i * vertical_width + vertical_width / 2
 					text := if cell.count >= 0 { cell.count.str() } else { '?' }
-					app.gg.draw_text(int(app.gg.scale / 2 * (offset_x + x)), int(app.gg.scale / 2 * (offset_y + y)), text,
-						color: gx.white,
+					app.gg.draw_text(int(app.gg.scale / 2 * (offset_x + x)), int(app.gg.scale / 2 * (
+						offset_y + y)), text,
+						color: gx.white
 						size: int(8 * app.gg.scale)
 					)
 				}
@@ -849,8 +834,9 @@ fn draw_map(mut app TriangoliApp) {
 					x := j * horizontal_width + horizontal_width / 2 - 4
 					y := i * vertical_width + vertical_width / 4
 					text := if cell.count >= 0 { cell.count.str() } else { '?' }
-					app.gg.draw_text(int(app.gg.scale / 2 * (offset_x + x)), int(app.gg.scale / 2 * (offset_y + y)), text,
-						color: gx.white,
+					app.gg.draw_text(int(app.gg.scale / 2 * (offset_x + x)), int(app.gg.scale / 2 * (
+						offset_y + y)), text,
+						color: gx.white
 						size: int(8 * app.gg.scale)
 					)
 				}
