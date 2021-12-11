@@ -539,9 +539,8 @@ fn draw_game(mut app TriangoliApp) {
 
 	if app.map_data.text != '' {
 		app.gg.set_cfg(gx.TextCfg{ size: size * 2 })
-		width := app.gg.text_width(app.map_data.text)
-		app.gg.draw_text((int(app.gg.scale * app.gg.width / 2) - width) / 2, int(app.gg.scale * app.gg.height / 2) - size * 2 - 10,
-			app.map_data.text, size: size * 2)
+		app.gg.draw_text(int(app.gg.scale * app.gg.width / 4), int(app.gg.scale * app.gg.height / 2) - size * 2 - 10,
+			app.map_data.text, size: size * 2, align: .center)
 	}
 }
 
@@ -796,13 +795,14 @@ fn draw_map(mut app TriangoliApp) {
 				app.gg.draw_triangle(offset_x + x1, offset_y + y1, offset_x + x2, offset_y + y2,
 					offset_x + x3, offset_y + y3, color)
 				if cell.typ == .not_mine && (cell.is_revealed || app.state == .editor) {
-					x := j * horizontal_width + horizontal_width / 2 - 4
+					x := j * horizontal_width + horizontal_width / 2
 					y := i * vertical_width + vertical_width / 2
 					text := if cell.count >= 0 { cell.count.str() } else { '?' }
 					app.gg.draw_text(int(app.gg.scale / 2 * (offset_x + x)), int(app.gg.scale / 2 * (
 						offset_y + y)), text,
 						color: gx.white
 						size: int(8 * app.gg.scale)
+						align: .center
 					)
 				}
 			} else {
@@ -829,13 +829,14 @@ fn draw_map(mut app TriangoliApp) {
 				app.gg.draw_triangle(offset_x + x1, offset_y + y1, offset_x + x2, offset_y + y2,
 					offset_x + x3, offset_y + y3, color)
 				if cell.typ == .not_mine && (cell.is_revealed || app.state == .editor) {
-					x := j * horizontal_width + horizontal_width / 2 - 4
+					x := j * horizontal_width + horizontal_width / 2
 					y := i * vertical_width + vertical_width / 4
 					text := if cell.count >= 0 { cell.count.str() } else { '?' }
 					app.gg.draw_text(int(app.gg.scale / 2 * (offset_x + x)), int(app.gg.scale / 2 * (
 						offset_y + y)), text,
 						color: gx.white
 						size: int(8 * app.gg.scale)
+						align: .center
 					)
 				}
 			}
