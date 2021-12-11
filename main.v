@@ -801,11 +801,11 @@ fn draw_map(mut app TriangoliApp) {
 					color := app.map_data.groups[cell.group]
 					app.gg.draw_triangle(offset_x + x1, offset_y + y1, offset_x + x2,
 						offset_y + y2, offset_x + x3, offset_y + y3, color)
-					x1 += 2
-					y1 -= 1
-					x2 -= 2
-					y2 -= 1
-					y3 += 2
+					x1 += 8
+					y1 -= 4
+					x2 -= 8
+					y2 -= 4
+					y3 += 8
 				}
 				mut color := if cell.typ == .empty { c_cell_empty } else { c_cell_unknown }
 				if cell.is_revealed {
@@ -832,11 +832,11 @@ fn draw_map(mut app TriangoliApp) {
 					color := app.map_data.groups[cell.group]
 					app.gg.draw_triangle(offset_x + x1, offset_y + y1, offset_x + x2,
 						offset_y + y2, offset_x + x3, offset_y + y3, color)
-					x1 += 2
-					y1 += 1
-					x2 -= 2
-					y2 += 1
-					y3 -= 2
+					x1 += 8
+					y1 += 4
+					x2 -= 8
+					y2 += 4
+					y3 -= 8
 				}
 				mut color := if cell.typ == .empty { c_cell_empty2 } else { c_cell_unknown2 }
 				if cell.is_revealed {
