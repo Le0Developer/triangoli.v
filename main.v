@@ -37,13 +37,13 @@ const (
 
 fn mk_campaign_map(name string, data embed_file.EmbedFileData) GameMap {
 	filename := data.path.split('/').last()
-	return GameMap{name, filename, true, data.to_string()}
+	return GameMap{name, filename, false, data.to_string()}
 }
 
 struct GameMap {
-	name            string
-	filename        string
-	is_campaign_map bool
+	name          string
+	filename      string
+	is_custom_map bool
 mut: // editor
 	map_data string
 }
@@ -157,14 +157,14 @@ fn main() {
 				}
 				'{"cells": []}'
 			}
-			app.current_map = GameMap{mapname, mapname, false, data}
+			app.current_map = GameMap{mapname, mapname, true, data}
 			app.map_data = load_map(data)
 			app.cli_launch = true
 		}
 		if editor {
 			app.state = .editor
 			if mapname == '' {
-				app.current_map = GameMap{'Untitled', 'untitled.tmap', false, '{"cells": []}'}
+				app.current_map = GameMap{'Untitled', 'untitled.tmap', true, '{"cells": []}'}
 			}
 			expand_map(mut app.map_data, 30, 10)
 			app.cli_launch = true
@@ -333,14 +333,14 @@ fn event_menu(mut ev gg.Event, mut app TriangoliApp) {
 			modifier := $if macos { gg.Modifier.super } $else { gg.Modifier.ctrl }
 			if ev.key_code == .n && gg.Modifier(ev.modifiers) == modifier {
 				data := '{"cells":[]}'
-				app.current_map = GameMap{'Untitled', 'untitled.tmap', false, data}
+				app.current_map = GameMap{'Untitled', 'untitled.tmap', true, data}
 				app.map_data = load_map(app.current_map.map_data)
 				app.state = .ingame
 				app.log('creating new map')
 			}
 			if ev.key_code == .e && gg.Modifier(ev.modifiers) == modifier {
 				data := '{"cells":[]}'
-				app.current_map = GameMap{'Untitled', 'untitled.tmap', false, data}
+				app.current_map = GameMap{'Untitled', 'untitled.tmap', true, data}
 				app.map_data = load_map(app.current_map.map_data)
 				expand_map(mut app.map_data, 30, 10)
 				app.state = .editor
@@ -360,7 +360,7 @@ fn event_menu(mut ev gg.Event, mut app TriangoliApp) {
 				app.log('failed to read file: $err')
 				return
 			}
-			app.current_map = GameMap{'Drag and Drop', filename, false, data}
+			app.current_map = GameMap{'Drag and Drop', filename, true, data}
 			app.map_data = load_map(app.current_map.map_data)
 			app.state = .ingame
 			app.log('opening map $filename')
@@ -423,7 +423,7 @@ fn event_game(mut ev gg.Event, mut app TriangoliApp) {
 				app.map_data = load_map(app.current_map.map_data)
 			}
 			if ev.key_code == .e && gg.Modifier(ev.modifiers) == modifier
-				&& !app.current_map.is_campaign_map {
+				&& app.current_map.is_custom_map {
 				app.map_data = load_map(app.current_map.map_data)
 				expand_map(mut app.map_data, 30, 10)
 				app.state = .editor
@@ -437,8 +437,8 @@ fn event_game(mut ev gg.Event, mut app TriangoliApp) {
 			}
 		}
 		.files_droped {
-			if app.current_map.is_campaign_map {
-				app.log('cannot load map while playing campaign')
+			if !app.current_map.is_custom_map {
+				app.log('current map forbids loading of other maps')
 				return
 			}
 			if app.cli_launch {
@@ -454,7 +454,7 @@ fn event_game(mut ev gg.Event, mut app TriangoliApp) {
 				app.log('failed to read file: $err')
 				return
 			}
-			app.current_map = GameMap{'Drag and Drop', filename, false, data}
+			app.current_map = GameMap{'Drag and Drop', filename, true, data}
 			app.map_data = load_map(app.current_map.map_data)
 			app.log('opening map $filename')
 		}
@@ -488,7 +488,7 @@ fn event_game(mut ev gg.Event, mut app TriangoliApp) {
 }
 
 fn draw_editor(mut app TriangoliApp) {
-	if app.current_map.is_campaign_map {
+	if !app.current_map.is_custom_map {
 		return
 	}
 
@@ -504,7 +504,7 @@ fn draw_editor(mut app TriangoliApp) {
 }
 
 fn event_editor(mut ev gg.Event, mut app TriangoliApp) {
-	if app.current_map.is_campaign_map { // small safeguard that should never happen
+	if !app.current_map.is_custom_map { // small safeguard that should never happen
 		return
 	}
 	match ev.typ {
@@ -552,7 +552,7 @@ fn event_editor(mut ev gg.Event, mut app TriangoliApp) {
 				app.log('failed to read file: $err')
 				return
 			}
-			app.current_map = GameMap{'Drag and Drop', filename, false, data}
+			app.current_map = GameMap{'Drag and Drop', filename, true, data}
 			app.map_data = load_map(app.current_map.map_data)
 			app.log('opening map $filename')
 		}
