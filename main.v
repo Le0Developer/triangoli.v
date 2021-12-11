@@ -397,14 +397,14 @@ fn load_main_menu_map(mut app TriangoliApp) {
 		'02-02', '02-03', '05-02', '05-03', '03-01', '07-02', '07-03', '06-01', '03-02', '03-03',
 		'06-02', '06-03']!
 	mut map_ids_idx := 0
-	mut groups_done := [false, false, false, false, false, false, false]!
-	for i in 1 .. (groups_done.len + 1) {
+	mut worlds_done := [false, false, false, false, false, false, false]!
+	for i in 1 .. (worlds_done.len + 1) {
 		for j in 1 .. 4 {
 			if '0$i-$j' !in app.savestate_completion {
 				break
 			}
 			if j == 3 {
-				groups_done[i] = true
+				worlds_done[i] = true
 			}
 		}
 	}
@@ -412,14 +412,19 @@ fn load_main_menu_map(mut app TriangoliApp) {
 		for j in 0 .. app.map_data.cells[i].len {
 			if app.map_data.cells[i][j].typ == .mine {
 				app.map_data.cells[i][j].id = map_ids[map_ids_idx]
-				if map_ids[map_ids_idx] in app.savestate_completion {
-					app.map_data.cells[i][j].group = 0
+				world := map_ids[map_ids_idx].all_before('-').int()
+				if world != 1 && !worlds_done[world - 2] {
+					app.map_data.cells[i][j].typ = .empty
 				}
-				group := map_ids[map_ids_idx].all_before('-').int()
-				if group == 1 || groups_done[group - 2] {
+				if map_ids[map_ids_idx] in app.savestate_completion {
 					app.map_data.cells[i][j].is_revealed = true
 				}
 				map_ids_idx++
+			} else if app.map_data.cells[i][j].typ == .not_mine {
+				world := if app.map_data.cells[i][j].count > 0 { app.map_data.cells[i][j].count - 1 } else { 6 }
+				if world != 0 && !worlds_done[world] {
+					app.map_data.cells[i][j].typ = .empty
+				}
 			}
 		}
 	}
@@ -498,10 +503,6 @@ fn event_menu(mut ev gg.Event, mut app TriangoliApp) {
 			}
 			cell, _, _ := pointing_at_cell(app) or { return }
 			if cell.typ != .mine {
-				return
-			}
-			if !cell.is_revealed {
-				app.log('you have not unlocked this campaign map yet')
 				return
 			}
 			for cmap in compaign_maps {
