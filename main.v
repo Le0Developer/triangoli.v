@@ -273,7 +273,7 @@ fn export_map(md MapData) string {
 			if cell.typ != .empty {
 				celldata['is_mine'] = cell.typ == .mine
 			}
-			if cell.count > 0 && cell.typ == .not_mine {
+			if cell.count != 0 && cell.typ == .not_mine {
 				celldata['count'] = cell.count
 			}
 			if cell.group >= 0 {
