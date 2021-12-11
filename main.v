@@ -477,10 +477,6 @@ fn event_menu(mut ev gg.Event, mut app TriangoliApp) {
 				load_main_menu_map(mut app)
 				app.log('loaded save state slot: $app.savestate_slot')
 			}
-			if ev.key_code == ._1 {
-			}
-			if ev.key_code == .escape {
-			}
 		}
 		.files_droped {
 			num_dropped := sapp.get_num_dropped_files()
