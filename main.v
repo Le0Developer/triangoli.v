@@ -453,6 +453,12 @@ fn load_main_menu_map(mut app TriangoliApp) {
 
 fn draw_menu(mut app TriangoliApp) {
 	draw_map(mut app)
+
+	size := 8 * int(app.gg.scale)
+	if app.map_data.text != '' {
+		app.gg.draw_text(int(app.gg.scale * app.gg.width / 4), int(app.gg.scale * app.gg.height / 2) - 2 * size,
+			app.map_data.text, size: size * 2, align: .center)
+	}
 }
 
 fn event_menu(mut ev gg.Event, mut app TriangoliApp) {
