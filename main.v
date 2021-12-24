@@ -33,6 +33,21 @@ const (
 		mk_campaign_map('01-01', $embed_file('assets/campaign/01-01.tmap', .zlib)),
 		mk_campaign_map('01-02', $embed_file('assets/campaign/01-02.tmap', .zlib)),
 		mk_campaign_map('01-03', $embed_file('assets/campaign/01-03.tmap', .zlib)),
+		mk_campaign_map('02-01', $embed_file('assets/campaign/02-01.tmap', .zlib)),
+		mk_campaign_map('02-02', $embed_file('assets/campaign/02-02.tmap', .zlib)),
+		mk_campaign_map('02-03', $embed_file('assets/campaign/02-03.tmap', .zlib)),
+		mk_campaign_map('03-01', $embed_file('assets/campaign/03-01.tmap', .zlib)),
+		mk_campaign_map('03-02', $embed_file('assets/campaign/03-02.tmap', .zlib)),
+		mk_campaign_map('03-03', $embed_file('assets/campaign/03-03.tmap', .zlib)),
+		mk_campaign_map('04-01', $embed_file('assets/campaign/04-01.tmap', .zlib)),
+		mk_campaign_map('04-02', $embed_file('assets/campaign/04-02.tmap', .zlib)),
+		mk_campaign_map('04-03', $embed_file('assets/campaign/04-03.tmap', .zlib)),
+		mk_campaign_map('05-01', $embed_file('assets/campaign/05-01.tmap', .zlib)),
+		mk_campaign_map('05-02', $embed_file('assets/campaign/05-02.tmap', .zlib)),
+		mk_campaign_map('05-03', $embed_file('assets/campaign/05-03.tmap', .zlib)),
+		mk_campaign_map('06-01', $embed_file('assets/campaign/06-01.tmap', .zlib)),
+		mk_campaign_map('06-02', $embed_file('assets/campaign/06-02.tmap', .zlib)),
+		mk_campaign_map('06-03', $embed_file('assets/campaign/06-03.tmap', .zlib)),
 	]
 	main_menu_map         = GameMap{'main', 'main_menu.tmap', false, ($embed_file('assets/main_menu.tmap', .zlib)).to_string()}
 )
