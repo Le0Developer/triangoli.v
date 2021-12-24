@@ -555,7 +555,7 @@ fn draw_game(mut app TriangoliApp) {
 	}
 
 	if app.map_data.text != '' {
-		app.gg.draw_text(int(app.gg.scale * app.gg.width / 4), int(app.gg.scale * app.gg.height / 4) - size,
+		app.gg.draw_text(int(app.gg.scale * app.gg.width / 4), int(app.gg.scale * app.gg.height / 2) - 2 * size,
 			app.map_data.text, size: size * 2, align: .center)
 	}
 }
