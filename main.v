@@ -48,6 +48,9 @@ const (
 		mk_campaign_map('06-01', $embed_file('assets/campaign/06-01.tmap', .zlib)),
 		mk_campaign_map('06-02', $embed_file('assets/campaign/06-02.tmap', .zlib)),
 		mk_campaign_map('06-03', $embed_file('assets/campaign/06-03.tmap', .zlib)),
+		mk_campaign_map('07-01', $embed_file('assets/campaign/07-01.tmap', .zlib)),
+		mk_campaign_map('07-02', $embed_file('assets/campaign/07-02.tmap', .zlib)),
+		mk_campaign_map('07-03', $embed_file('assets/campaign/07-03.tmap', .zlib)),
 	]
 	main_menu_map         = GameMap{'main', 'main_menu.tmap', false, ($embed_file('assets/main_menu.tmap', .zlib)).to_string()}
 )
@@ -413,10 +416,9 @@ fn load_main_menu_map(mut app TriangoliApp) {
 	// 'campaign/map01-01.tmap'
 	map_ids := ['01-01', '04-01', '01-02', '01-03', '04-02', '04-03', '02-01', '07-01', '05-01',
 		'02-02', '02-03', '05-02', '05-03', '03-01', '07-02', '07-03', '06-01', '03-02', '03-03',
-		'06-02', '06-03']!
+		'06-02', '06-03', '07-01', '07-02', '07-03']!
 	mut map_ids_idx := 0
 	mut worlds_done := [false, false, false, false, false, false, false]!
-	for i in 1 .. (worlds_done.len + 1) {
 		for j in 1 .. 4 {
 			if '0$i-0$j' !in app.savestate_completion {
 				break
