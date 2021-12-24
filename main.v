@@ -530,7 +530,7 @@ fn draw_game(mut app TriangoliApp) {
 		text := 'Map cleared!'
 		app.gg.set_cfg(gx.TextCfg{ size: size * 2 })
 		width := app.gg.text_width(text)
-		app.gg.draw_rect((app.gg.width - width) / 2 - 10, (app.gg.height - size) / 2 - size - 5,
+		app.gg.draw_rect_filled((app.gg.width - width) / 2 - 10, (app.gg.height - size) / 2 - size - 5,
 			width + 20, 2 * size + 10, gx.black)
 		app.gg.draw_text(int(app.gg.scale * app.gg.width) / 4, int(app.gg.scale * app.gg.height / 4) - size + 5, text,
 			color: gx.white, size: size * 2, align: .center, vertical_align: .middle)
@@ -775,7 +775,7 @@ fn draw_map(mut app TriangoliApp) {
 				mut y3 := i * vertical_width
 				if cell.group >= 0 {
 					color := app.map_data.groups[cell.group]
-					app.gg.draw_triangle(offset_x + x1, offset_y + y1, offset_x + x2,
+					app.gg.draw_triangle_filled(offset_x + x1, offset_y + y1, offset_x + x2,
 						offset_y + y2, offset_x + x3, offset_y + y3, color)
 					x1 += 8
 					y1 -= 4
@@ -787,7 +787,7 @@ fn draw_map(mut app TriangoliApp) {
 				if cell.is_revealed {
 					color = if cell.typ == .mine { c_cell_mine } else { c_cell_revealed }
 				}
-				app.gg.draw_triangle(offset_x + x1, offset_y + y1, offset_x + x2, offset_y + y2,
+				app.gg.draw_triangle_filled(offset_x + x1, offset_y + y1, offset_x + x2, offset_y + y2,
 					offset_x + x3, offset_y + y3, color)
 				if cell.typ == .not_mine && (cell.is_revealed || app.state == .editor) {
 					x := j * horizontal_width + horizontal_width / 2
@@ -809,7 +809,7 @@ fn draw_map(mut app TriangoliApp) {
 				mut y3 := (i + 1) * vertical_width
 				if cell.group >= 0 {
 					color := app.map_data.groups[cell.group]
-					app.gg.draw_triangle(offset_x + x1, offset_y + y1, offset_x + x2,
+					app.gg.draw_triangle_filled(offset_x + x1, offset_y + y1, offset_x + x2,
 						offset_y + y2, offset_x + x3, offset_y + y3, color)
 					x1 += 8
 					y1 += 4
@@ -821,7 +821,7 @@ fn draw_map(mut app TriangoliApp) {
 				if cell.is_revealed {
 					color = if cell.typ == .mine { c_cell_mine2 } else { c_cell_revealed2 }
 				}
-				app.gg.draw_triangle(offset_x + x1, offset_y + y1, offset_x + x2, offset_y + y2,
+				app.gg.draw_triangle_filled(offset_x + x1, offset_y + y1, offset_x + x2, offset_y + y2,
 					offset_x + x3, offset_y + y3, color)
 				if cell.typ == .not_mine && (cell.is_revealed || app.state == .editor) {
 					x := j * horizontal_width + horizontal_width / 2
