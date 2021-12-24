@@ -419,6 +419,7 @@ fn load_main_menu_map(mut app TriangoliApp) {
 		'06-02', '06-03', '07-01', '07-02', '07-03']!
 	mut map_ids_idx := 0
 	mut worlds_done := [false, false, false, false, false, false, false]!
+	for i in 1 .. worlds_done.len {
 		for j in 1 .. 4 {
 			if '0$i-0$j' !in app.savestate_completion {
 				break
