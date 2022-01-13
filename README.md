@@ -19,6 +19,6 @@ make
 cd ..
 git clone https://github.com/le0developer/triangoli.v.git
 cd triangoli.v
-v -prod -skip-unused main.v
+../v/v -prod -skip-unused main.v
 ./main
 ```
