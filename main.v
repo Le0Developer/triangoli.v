@@ -88,7 +88,7 @@ mut:
 	map_data    MapData
 
 	background_noise gg.Image
-	cli_launch bool
+	cli_launch       bool
 
 	logs []Log
 
@@ -229,7 +229,8 @@ fn frame(mut app TriangoliApp) {
 	if app.logs.len > 0 {
 		size := 8 * int(app.gg.scale)
 		for i, log in app.logs {
-			app.gg.draw_text(1, int(app.gg.scale / 2 * app.gg.height) - size * (app.logs.len - i), log.text, size: size)
+			app.gg.draw_text(1, int(app.gg.scale / 2 * app.gg.height) - size * (app.logs.len - i),
+				log.text, size: size)
 		}
 	}
 	app.gg.end()
@@ -442,7 +443,11 @@ fn load_main_menu_map(mut app TriangoliApp) {
 				}
 				map_ids_idx++
 			} else if app.map_data.cells[i][j].typ == .not_mine {
-				world := if app.map_data.cells[i][j].count > 0 { app.map_data.cells[i][j].count - 1 } else { 6 }
+				world := if app.map_data.cells[i][j].count > 0 {
+					app.map_data.cells[i][j].count - 1
+				} else {
+					6
+				}
 				if world != 0 && !worlds_done[world] {
 					app.map_data.cells[i][j].typ = .empty
 				}
@@ -556,8 +561,13 @@ fn draw_game(mut app TriangoliApp) {
 		width := app.gg.text_width(text)
 		app.gg.draw_rect_filled((app.gg.width - width) / 2 - 10, (app.gg.height - size) / 2 - size - 5,
 			width + 20, 2 * size + 10, gx.black)
-		app.gg.draw_text(int(app.gg.scale * app.gg.width) / 4, int(app.gg.scale * app.gg.height / 4) - size + 5, text,
-			color: gx.white, size: size * 2, align: .center, vertical_align: .middle)
+		app.gg.draw_text(int(app.gg.scale * app.gg.width) / 4,
+			int(app.gg.scale * app.gg.height / 4) - size + 5, text,
+			color: gx.white
+			size: size * 2
+			align: .center
+			vertical_align: .middle
+		)
 	}
 
 	if app.map_data.text != '' {
@@ -634,7 +644,8 @@ fn event_game(mut ev gg.Event, mut app TriangoliApp) {
 			}
 			if app.map_data.remaining_mines == 0 && app.map_data.remaining_other == 0 {
 				app.log('Map cleared!')
-				if !app.current_map.is_custom_map && app.current_map.name !in app.savestate_completion {
+				if !app.current_map.is_custom_map
+					&& app.current_map.name !in app.savestate_completion {
 					app.savestate_completion << app.current_map.name
 					save_savestate(mut app)
 				}
@@ -811,8 +822,8 @@ fn draw_map(mut app TriangoliApp) {
 				if cell.is_revealed {
 					color = if cell.typ == .mine { c_cell_mine } else { c_cell_revealed }
 				}
-				app.gg.draw_triangle_filled(offset_x + x1, offset_y + y1, offset_x + x2, offset_y + y2,
-					offset_x + x3, offset_y + y3, color)
+				app.gg.draw_triangle_filled(offset_x + x1, offset_y + y1, offset_x + x2,
+					offset_y + y2, offset_x + x3, offset_y + y3, color)
 				if cell.typ == .not_mine && (cell.is_revealed || app.state == .editor) {
 					x := j * horizontal_width + horizontal_width / 2
 					y := i * vertical_width + vertical_width / 2
@@ -845,8 +856,8 @@ fn draw_map(mut app TriangoliApp) {
 				if cell.is_revealed {
 					color = if cell.typ == .mine { c_cell_mine2 } else { c_cell_revealed2 }
 				}
-				app.gg.draw_triangle_filled(offset_x + x1, offset_y + y1, offset_x + x2, offset_y + y2,
-					offset_x + x3, offset_y + y3, color)
+				app.gg.draw_triangle_filled(offset_x + x1, offset_y + y1, offset_x + x2,
+					offset_y + y2, offset_x + x3, offset_y + y3, color)
 				if cell.typ == .not_mine && (cell.is_revealed || app.state == .editor) {
 					x := j * horizontal_width + horizontal_width / 2
 					y := i * vertical_width + vertical_width / 4
